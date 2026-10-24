@@ -1,0 +1,52 @@
+---
+description: Realtime sockets, push notifications, badges, and app lifecycle rules
+globs: src/realtime/**/*.ts,src/notifications/**/*.ts,features/notifications/**/*.tsx
+alwaysApply: false
+---
+
+# Realtime & Notifications
+
+## Socket lifecycle
+
+The app should:
+- connect after authentication
+- reconnect safely
+- disconnect on logout
+- handle app background/foreground transitions appropriately
+- avoid duplicate listeners
+
+Register each event listener once per lifecycle.
+
+## Realtime events
+
+Typical events:
+```text
+message:new
+message:read
+message:reaction
+correction:created
+typing:start
+typing:stop
+presence:updated
+```
+
+Use server events as authoritative.
+
+## Push notifications
+
+Push can cover:
+- new messages
+- connection requests
+- accepted connections
+- corrections
+- learning reminders
+- security events
+
+Respect notification settings.
+
+Do not place sensitive private message contents into push payloads unless the product explicitly supports it and privacy requirements are satisfied.
+
+## Badge counts
+
+Keep badge state consistent with server state where possible.
+Do not permanently increment badges on duplicate realtime/push deliveries.

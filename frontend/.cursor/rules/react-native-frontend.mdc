@@ -1,0 +1,142 @@
+---
+description: Core React Native + TypeScript rules for the language exchange mobile app
+globs:
+alwaysApply: true
+---
+
+# Language Exchange Mobile Frontend
+
+Build a polished mobile-first language exchange app similar in product scope to Tandem/HelloTalk.
+
+This is a LANGUAGE LEARNING app, not a dating app.
+
+## Preferred stack
+
+Default assumptions:
+- React Native
+- TypeScript
+- Expo when the project uses Expo
+- Expo Router for navigation when the project uses Expo Router
+- NativeWind/Tailwind for styling when already installed
+- TanStack Query for server state
+- Zustand for small client/global state
+- React Hook Form + Zod for forms
+- React Native Reanimated for meaningful animations
+- FlashList for large/high-frequency lists
+- Socket.IO client/WebSocket for realtime features
+
+If the repository already uses another equivalent library, preserve the existing stack instead of replacing it.
+
+## Architecture
+
+Prefer feature-oriented organization:
+
+```text
+app/ or navigation/
+features/
+  auth/
+  onboarding/
+  profile/
+  discovery/
+  matching/
+  conversations/
+  messages/
+  corrections/
+  notifications/
+  settings/
+components/
+lib/
+api/
+hooks/
+store/
+theme/
+types/
+utils/
+```
+
+Do not create giant generic folders with unrelated product logic.
+
+## Product principles
+
+The app helps users:
+- learn languages
+- find compatible language partners
+- practice conversations
+- exchange corrections
+- build learning habits
+
+Do not introduce:
+- dating/swiping mechanics
+- attractiveness scores
+- romantic compatibility scores
+- dating-style popularity rankings
+
+Partner compatibility means LANGUAGE-LEARNING compatibility.
+
+## UI principles
+
+- Mobile-first.
+- One clear primary action per screen.
+- Keep navigation predictable.
+- Avoid unnecessary modal layers.
+- Use safe areas.
+- Support keyboard-aware forms.
+- Provide loading, empty, error, and success states.
+- Do not rely on color alone to communicate state.
+- Use accessible touch targets.
+- Keep typography readable on small screens.
+
+## Data boundaries
+
+Components should not directly call fetch/axios.
+
+Prefer:
+
+UI → feature hook → API client/query → backend
+
+Keep API contracts typed.
+
+## State
+
+Use server state tools for:
+- profiles
+- discovery results
+- conversations
+- messages
+- notifications
+- remote settings
+
+Use local/client state for:
+- UI state
+- transient form state
+- local preferences
+- navigation-related state
+
+Do not duplicate server state into Zustand without a concrete reason.
+
+## Performance
+
+- Use FlashList for long lists.
+- Avoid anonymous heavy computations during render.
+- Memoize only when it improves a measured/reasonable hot path.
+- Do not render entire conversation histories unnecessarily.
+- Paginate discovery and message history.
+- Optimize images and media.
+- Avoid unnecessary global state subscriptions.
+
+## Security
+
+- Never hardcode API keys or secrets.
+- Do not put secrets in the mobile bundle.
+- Store sensitive session credentials using secure device storage appropriate to the platform.
+- Never trust client-side permissions as authorization.
+- Treat server responses as untrusted input.
+- Avoid logging private messages, tokens, or sensitive profile data.
+
+## Testing
+
+For meaningful features, add:
+- component tests where behavior is non-trivial
+- hook/service tests for business logic
+- navigation/flow tests for critical flows
+- E2E tests for auth/onboarding/chat if the project has E2E infrastructure

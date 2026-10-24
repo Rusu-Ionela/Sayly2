@@ -1,0 +1,94 @@
+---
+description: Feature architecture and component boundaries for the React Native app
+globs: app/**/*.tsx,src/**/*.tsx,src/**/*.ts,features/**/*.tsx,features/**/*.ts
+alwaysApply: false
+---
+
+# Feature Architecture
+
+Prefer small, composable components.
+
+## Screen responsibilities
+
+A screen should:
+- compose feature components
+- read route parameters
+- invoke feature hooks
+- coordinate loading/error/empty states
+- remain readable
+
+A screen should NOT contain hundreds of lines of business logic.
+
+## Component responsibilities
+
+Reusable UI components should:
+- accept typed props
+- avoid direct API calls
+- avoid importing unrelated product services
+- expose meaningful states through props
+
+Example:
+
+```tsx
+<PartnerCard
+  partner={partner}
+  onPress={() => openPartner(partner.id)}
+/>
+```
+
+Avoid:
+
+```tsx
+<PartnerCard />
+```
+
+where the component secretly fetches, mutates, navigates, and manages unrelated state.
+
+## Hooks
+
+Use hooks for reusable behavior:
+
+```text
+useCurrentUser()
+usePartnerDiscovery()
+useConversation()
+useMessages()
+useSendMessage()
+useCorrections()
+useNotificationPreferences()
+```
+
+Hooks should not become giant "everything" hooks.
+
+## API layer
+
+Centralize:
+- base URL
+- auth headers
+- response parsing
+- API errors
+- retry behavior
+
+Feature APIs should expose typed functions.
+
+## Design system
+
+Prefer shared primitives:
+
+```text
+Button
+IconButton
+Text
+Input
+Avatar
+Badge
+Card
+Sheet
+Modal
+Divider
+Skeleton
+EmptyState
+ErrorState
+```
+
+Do not create slightly different versions of the same primitive for every screen.

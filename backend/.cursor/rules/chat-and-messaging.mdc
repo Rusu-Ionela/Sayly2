@@ -1,0 +1,72 @@
+---
+description: Chat, messages, corrections, read state, and realtime rules
+globs: src/modules/conversations/**/*.ts,src/modules/messages/**/*.ts,src/socket/**/*.ts
+alwaysApply: false
+---
+
+# Chat & messaging
+
+## Authorization
+
+Every message operation must verify that the authenticated user is an active participant in the conversation.
+
+Never trust conversation_id alone.
+
+## Message creation
+
+Server determines:
+- sender_id
+- server timestamp
+- message identity
+- allowed message type
+- attachment ownership
+
+Client may provide content and client metadata only where explicitly supported.
+
+## Ordering
+
+Use server-generated timestamps/sequence IDs for canonical ordering.
+
+Do not rely on the client's device clock for message ordering.
+
+## Idempotency
+
+If mobile clients may retry message sends, support a client-generated idempotency key where appropriate.
+
+Repeated retries must not create duplicate messages.
+
+## Read state
+
+A user may update their own read state only.
+
+Do not let clients mark another participant's messages as read without server-side authorization.
+
+## Blocks
+
+A blocked relationship must prevent new communication according to product policy.
+
+Check block state server-side; do not rely only on UI hiding.
+
+## Corrections
+
+If users can correct each other's language:
+- preserve the original message
+- store correction separately
+- identify the correction author
+- allow the original author to understand/accept/dismiss it
+- do not mutate the original message into the correction
+
+## Realtime
+
+Socket events should be authorized before emitting or accepting state changes.
+
+Use Socket.IO/WebSocket for:
+- new messages
+- typing indicators
+- presence
+- read receipts
+- correction events
+
+Use durable database state for anything that must survive reconnects.
+
+Typing indicators and ephemeral presence should not be treated as durable message data.

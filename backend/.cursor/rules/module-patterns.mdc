@@ -1,0 +1,65 @@
+---
+description: Module route/controller/service/repository patterns for language exchange features
+globs: src/modules/**/*.ts
+alwaysApply: false
+---
+
+# Module patterns
+
+Keep the existing architecture.
+
+```text
+routes → controllers → services → repositories → db/schema
+              ↓
+          validations
+```
+
+## Controllers
+
+- Parse authenticated identity and validated input.
+- Call exactly the appropriate service.
+- Return the standard response shape.
+- Pass expected/unexpected errors to the existing error handler.
+- Do not contain SQL or complex business rules.
+
+## Services
+
+Services own:
+- matching rules
+- conversation authorization
+- block/report enforcement
+- message state transitions
+- learning/correction rules
+- notification decisions
+- transactional orchestration
+
+Services must not import Express Request/Response.
+
+## Repositories
+
+Repositories contain ORM/database operations only.
+
+Return domain-friendly rows/DTOs.
+Do not put HTTP behavior or Zod validation in repositories.
+
+## Routes
+
+- Apply authentication where required.
+- Apply authorization for conversation/message resources.
+- Attach Zod validation at the route boundary.
+- Mount new routers through the existing application registration.
+- Update OpenAPI/docs if the project uses them.
+
+## Example
+
+```ts
+const input = getValidatedBody<CreateMessageInput>(req);
+const data = await messageService.createMessage(req.user.id, input);
+return sendSuccess(res, 'Message sent', data);
+```
+
+Avoid:
+
+```ts
+// controller doing SQL, matching logic, and notification logic
+```

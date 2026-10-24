@@ -1,0 +1,38 @@
+---
+description: React Native form, validation, keyboard, and onboarding rules
+globs: features/**/*.tsx,features/**/*.ts,components/forms/**/*.tsx
+alwaysApply: false
+---
+
+# Forms
+
+Use React Hook Form + Zod when available in the repository.
+
+## Rules
+
+- Validate client-side for fast feedback.
+- Treat server validation as authoritative.
+- Keep error messages human-readable.
+- Preserve user input after recoverable server errors.
+- Disable duplicate submissions while a request is in progress.
+- Handle keyboard overlap correctly.
+- Use appropriate keyboard types.
+- Support autofill where appropriate.
+
+## Onboarding
+
+Language onboarding should make it easy to select:
+- native/spoken languages
+- target/learning languages
+- proficiency
+- learning goals
+- interests
+
+Avoid asking for unnecessary information before the user reaches value.
+
+## OTP/auth
+
+- Handle paste/autofill when supported.
+- Provide clear resend states.
+- Never log OTPs.
+- Never store OTPs in app state longer than necessary.

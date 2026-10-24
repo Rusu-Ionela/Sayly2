@@ -1,0 +1,42 @@
+---
+description: Safe PostgreSQL and Drizzle migration rules for the language exchange backend
+globs: src/db/**/*.ts,drizzle/**/*.sql,drizzle/meta/**/*.json,drizzle.config.ts
+alwaysApply: false
+---
+
+# Drizzle / migrations
+
+- Schema source of truth is the project's Drizzle schema directory.
+- Generate migrations with the repository's existing DB script.
+- Review generated SQL before applying it.
+- Never silently rewrite an already-applied migration.
+- Prefer safe/idempotent SQL when repairing development databases.
+- Never use destructive repair/reset commands against production.
+- Preserve foreign-key and uniqueness constraints.
+- Add indexes for high-volume access paths.
+
+## Important indexes
+
+Likely high-volume indexes include:
+- conversation participants by user_id
+- messages by conversation_id + created_at
+- unread messages/read state
+- discovery profile language relationships
+- blocks by blocker_id + blocked_id
+- reports by status/created_at
+- device tokens by user_id
+- presence by user_id
+
+Choose indexes from actual query patterns; do not add every conceivable index.
+
+## Data integrity
+
+Use database constraints for invariants that must never be violated.
+
+Examples:
+- one participant row per user/conversation
+- one block relationship per user pair
+- unique language preference relationships
+- unique device token when appropriate
+
+Use transactions when one user action changes multiple related records.

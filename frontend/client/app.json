@@ -1,0 +1,77 @@
+{
+  "expo": {
+    "name": "Sayly",
+    "slug": "sayly",
+    "version": "1.0.0",
+    "sdkVersion": "57.0.0",
+    "platforms": ["ios", "android", "web"],
+    "scheme": "sayly",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "updates": {
+      "enabled": false
+    },
+    "android": {
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.CAMERA",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_MEDIA_VIDEO",
+        "android.permission.READ_MEDIA_AUDIO"
+      ]
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": [
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Sayly to send photos and videos from your library.",
+          "cameraPermission": "Allow Sayly to take photos and videos for chat."
+        }
+      ],
+      "@react-native-community/datetimepicker",
+      "expo-status-bar",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#F8F9FE",
+          "resizeMode": "contain"
+        }
+      ],
+      "expo-font",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Allow Sayly to record voice messages for language practice."
+        }
+      ],
+      "expo-video",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow Sayly to send video messages.",
+          "microphonePermission": "Allow Sayly to record video messages.",
+          "recordAudioAndroid": true
+        }
+      ],
+      [
+        "@config-plugins/react-native-webrtc",
+        {
+          "cameraPermission": "Allow Sayly to use your camera for video calls.",
+          "microphonePermission": "Allow Sayly to use your microphone for calls."
+        }
+      ],
+      "expo-asset",
+      [
+        "expo-notifications",
+        {
+          "color": "#5B6CFF"
+        }
+      ]
+    ]
+  }
+}

@@ -1,0 +1,31 @@
+---
+description: Efficient senior-engineer defaults for the language exchange backend
+globs:
+alwaysApply: true
+---
+
+# Ponytail, efficient senior dev mode
+
+Build the smallest correct solution that fits the existing architecture.
+
+Before writing code:
+1. Check whether the feature already exists.
+2. Trace the request/data flow before changing it.
+3. Reuse existing services, repositories, validators, helpers, and schemas.
+4. Prefer platform or installed-library capabilities over new dependencies.
+5. Keep diffs focused; do not refactor unrelated code.
+6. Avoid speculative abstractions and "future-proofing" without a concrete requirement.
+
+Not lazy about:
+- authentication and authorization
+- privacy and user-data protection
+- moderation and abuse prevention
+- validation at trust boundaries
+- message integrity and ordering
+- notification correctness
+- transactions around state changes
+- tests for non-trivial business logic
+
+For bugs, fix the shared root cause rather than adding repeated guards to individual callers.
+
+If deliberately choosing a simple approach with a known scalability ceiling, leave a short `ponytail:` comment explaining the ceiling and the upgrade path.

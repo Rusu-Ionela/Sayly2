@@ -1,0 +1,62 @@
+---
+description: Trust, safety, blocking, reporting, and moderation rules
+globs: src/modules/moderation/**/*.ts,src/modules/reports/**/*.ts,src/modules/blocks/**/*.ts
+alwaysApply: false
+---
+
+# Moderation & safety
+
+A language exchange platform is user-generated-content software. Safety is a backend concern, not only a UI concern.
+
+## Blocks
+
+A block should affect:
+- discovery
+- messaging
+- partner recommendations
+- profile visibility where required
+
+Check both directions:
+- requester blocked target
+- target blocked requester
+
+## Reports
+
+Reports should capture:
+- reporter
+- target user/content
+- reason/category
+- optional details
+- timestamps
+- moderation status
+
+Do not expose internal moderation notes to the reported user.
+
+## Abuse prevention
+
+Protect high-risk endpoints with rate limits:
+- signup/login
+- OTP
+- password reset
+- messaging
+- media uploads
+- reports
+- discovery
+- translation/AI endpoints
+
+Prevent obvious spam patterns without creating unnecessary friction for normal learners.
+
+## Moderation actions
+
+Keep moderation state explicit:
+- active
+- restricted
+- suspended
+- banned/deactivated
+
+Do not silently delete evidence needed for moderation unless retention policy requires it.
+
+## Privacy
+
+Moderation tools must follow least privilege.
+Admin/moderator endpoints require explicit authorization.

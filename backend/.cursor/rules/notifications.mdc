@@ -1,0 +1,30 @@
+---
+description: Push notifications and notification preference rules
+globs: src/modules/notifications/**/*.ts,src/infrastructure/notifications/**/*.ts
+alwaysApply: false
+---
+
+# Notifications
+
+Notifications are user-facing side effects and should be decoupled from core writes where practical.
+
+Potential events:
+- new message
+- message reaction
+- correction received
+- partner request/acceptance
+- learning reminder
+- mention/reply
+- moderation/security event
+
+## Rules
+
+- Respect user notification preferences.
+- Do not notify blocked users.
+- Do not leak private message content into notification payloads.
+- Keep notification payloads minimal.
+- Persist notification state if the app has an in-app notification center.
+- Use a queue for high-volume/non-critical notification delivery when the architecture supports it.
+- Make delivery retry-safe.
+
+Never store raw secrets in notification records.

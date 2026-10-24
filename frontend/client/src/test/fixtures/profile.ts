@@ -1,0 +1,46 @@
+import type { CurrentUserProfile } from "@/features/profile/types";
+
+/** A complete GET /users/me payload for unit tests. */
+export const testProfile: CurrentUserProfile = {
+  id: "me",
+  saylyId: "K7QF3MZA",
+  mainTopic: null,
+  references: { total: 0, positive: 0 },
+  location: null,
+  learningPreferences: { communication: [], timeCommitment: null, schedule: [], correction: null },
+  email: "me@example.com",
+  onboardingCompleted: true,
+  displayName: "Ionela",
+  bio: "Learning daily",
+  country: "RO",
+  avatarUrl: "/media/files/old.jpg",
+  profileImageUrl: "/media/files/old.jpg",
+  photoUrl: "/media/files/old.jpg",
+  dateOfBirth: "1998-04-02T00:00:00.000Z",
+  age: 28,
+  practiceGoals: ["Speaking"],
+  spokenLanguages: [
+    { languageId: "ro", code: "ro", name: "Romanian", flagEmoji: "🇷🇴", proficiency: "NATIVE" },
+  ],
+  learningLanguages: [
+    { languageId: "en", code: "en", name: "English", flagEmoji: "🇬🇧", proficiency: "BEGINNER" },
+  ],
+  nativeLanguages: ["Romanian"],
+  city: null,
+  settings: {
+    discoverable: true,
+    showOnlineStatus: true,
+    showSaylyId: true,
+    showCertificates: true,
+    translateTo: null,
+    showLocation: true,
+    notifyMessages: true,
+    notifyConnectionRequests: true,
+    notifyGroupActivity: true,
+  },
+  stats: { savedPhrases: 0, groups: 0, following: 0, newVisitors: 0 },
+  isPro: false,
+  topics: [],
+  photos: [],
+  certificates: [],
+};

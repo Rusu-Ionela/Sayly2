@@ -1,0 +1,83 @@
+---
+description: Visual system and UI consistency rules for the language exchange app
+globs: src/**/*.tsx,src/**/*.ts,app/**/*.tsx,components/**/*.tsx
+alwaysApply: false
+---
+
+# Design System
+
+The app should feel friendly, modern, educational, and human.
+
+It should NOT visually imitate a dating app.
+
+## Visual hierarchy
+
+Every screen should have:
+1. clear page purpose
+2. primary content
+3. primary action
+4. secondary actions
+
+Avoid excessive cards, borders, shadows, and decorative gradients.
+
+## Typography
+
+Use the project's typography tokens.
+Do not hardcode random font sizes across screens.
+
+Prefer semantic names such as:
+- display
+- title
+- heading
+- body
+- label
+- caption
+
+## Spacing
+
+Use shared spacing tokens.
+Do not invent one-off margins repeatedly.
+
+## Colors
+
+Use semantic tokens:
+
+```text
+background
+surface
+surfaceElevated
+textPrimary
+textSecondary
+textMuted
+border
+primary
+primaryForeground
+success
+warning
+error
+```
+
+Do not hardcode colors in every component.
+
+## Components
+
+Buttons must communicate hierarchy:
+- primary
+- secondary
+- tertiary/destructive
+
+Inputs should clearly show:
+- label
+- value
+- validation state
+- disabled state
+- focus state
+
+## Accessibility
+
+- Minimum comfortable touch target.
+- Support dynamic font sizing where feasible.
+- Provide accessible labels for icon-only buttons.
+- Ensure contrast.
+- Respect reduced-motion settings when practical.
+- Do not communicate errors only through color.

@@ -1,0 +1,62 @@
+{
+  "name": "language-learning-server",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit -p tsconfig.build.json",
+    "typecheck:all": "tsc -p tsconfig.test.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx scripts/migrate.ts",
+    "db:studio": "drizzle-kit studio",
+    "db:seed": "tsx scripts/seed-languages.ts",
+    "db:seed:demo": "tsx scripts/seed-demo-users.ts",
+    "db:ensure:messaging": "tsx scripts/ensure-messaging-schema.ts",
+    "db:ensure:review": "tsx scripts/ensure-review-schema.ts"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@asteasolutions/zod-to-openapi": "^7.3.4",
+    "@paralleldrive/cuid2": "^3.3.0",
+    "@socket.io/redis-adapter": "^8.3.0",
+    "@tensorflow/tfjs": "4.22.0",
+    "@tensorflow/tfjs-backend-wasm": "4.22.0",
+    "@vladmandic/face-api": "1.7.15",
+    "argon2": "^0.45.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.0",
+    "drizzle-orm": "^0.45.2",
+    "express": "^5.1.0",
+    "helmet": "^8.3.0",
+    "jose": "^6.2.10",
+    "multer": "^2.3.0",
+    "nodemailer": "^7.0.13",
+    "pg": "^8.23.0",
+    "redis": "^4.7.1",
+    "sharp": "0.35.5",
+    "socket.io": "^4.8.1",
+    "swagger-ui-express": "^5.0.1",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.3",
+    "@types/multer": "^2.2.0",
+    "@types/node": "^24.2.0",
+    "@types/nodemailer": "^6.4.24",
+    "@types/pg": "^8.23.1",
+    "@types/supertest": "^7.2.1",
+    "@types/swagger-ui-express": "^4.1.8",
+    "drizzle-kit": "^0.31.10",
+    "supertest": "^7.2.2",
+    "tsx": "^4.23.12",
+    "typescript": "~6.0.0",
+    "vitest": "^4.1.11"
+  }
+}

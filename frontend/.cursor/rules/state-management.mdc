@@ -1,0 +1,46 @@
+---
+description: Zustand and local state rules for React Native
+globs: src/store/**/*.ts,src/hooks/**/*.ts,features/**/*.tsx,features/**/*.ts
+alwaysApply: false
+---
+
+# State Management
+
+Use the smallest state mechanism that solves the problem.
+
+## Server state
+
+Use TanStack Query or the existing data layer.
+
+Examples:
+- profile
+- discovery
+- conversations
+- messages
+- notifications
+
+## Client state
+
+Zustand is appropriate for small cross-screen state such as:
+- onboarding draft
+- theme preference
+- ephemeral composer state
+- UI preferences
+
+## Local component state
+
+Prefer `useState` for:
+- modal visibility
+- input draft
+- temporary selection
+- local UI state
+
+## Avoid
+
+Do not create a global store for:
+- every API response
+- every form
+- every modal
+- values that belong to one screen
+
+Do not duplicate the same state across Zustand, Query cache, and component state.

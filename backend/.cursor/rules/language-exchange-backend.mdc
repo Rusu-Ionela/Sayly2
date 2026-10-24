@@ -1,0 +1,142 @@
+---
+description: Core architecture and product rules for the language exchange backend
+globs:
+alwaysApply: true
+---
+
+# Language Exchange Backend
+
+This backend powers a language-learning/social communication app similar in product scope to Tandem or HelloTalk, but it is a language exchange product, not a dating app.
+
+## Core stack
+
+Default backend assumptions:
+- Node.js
+- TypeScript
+- Express
+- PostgreSQL
+- Drizzle ORM
+- Redis where caching, rate limiting, presence, or ephemeral state is needed
+- Socket.IO/WebSocket for realtime chat and presence
+- FCM/APNs-compatible push notifications
+- Zod for request validation
+
+If the actual repository uses different infrastructure, preserve the repository's existing stack instead of replacing it.
+
+## Product principles
+
+The product exists to help people:
+- practice languages with real people
+- find compatible language partners
+- exchange corrections and learning help
+- chat through text, voice, images, and other supported media
+- build learning habits and progress
+
+Do NOT introduce dating-oriented mechanics such as:
+- romantic matching scores
+- swipe-to-date flows
+- attractiveness/rating systems
+- public dating-style popularity rankings
+
+A "match" means language-learning compatibility.
+
+## Main domains
+
+Typical modules:
+- auth
+- users
+- profiles
+- languages
+- learning-goals
+- partner-discovery
+- matching
+- conversations
+- messages
+- message-reactions
+- corrections
+- translation
+- media
+- notifications
+- blocks
+- reports
+- moderation
+- presence
+- settings/privacy
+- subscriptions/entitlements if monetization exists
+- admin
+
+## Layering
+
+Use:
+routes → controllers → services → repositories → db/schema
+
+Validation belongs at the route boundary with Zod.
+
+Controllers should be thin.
+Services own business rules.
+Repositories own database access.
+Do not put SQL inside controllers/services.
+
+## API defaults
+
+- Use the repository's existing API version prefix.
+- Never invent an endpoint that already exists.
+- Check route registration and OpenAPI definitions before creating a new path.
+- Use the existing success/error response helpers.
+- Never expose private fields by accident.
+
+## Privacy
+
+Treat these as sensitive user data:
+- email
+- phone number
+- precise location
+- date of birth
+- private messages
+- device tokens
+- moderation reports
+
+Never return private fields in public profile/discovery DTOs.
+
+Prefer coarse location such as city/country only when explicitly required by the product.
+
+## Discovery
+
+Partner discovery should be based on learning compatibility, such as:
+- native languages
+- target languages
+- proficiency
+- learning goals
+- interests
+- timezone/availability
+- conversation preferences
+
+Do not use hidden or opaque "attractiveness" scoring.
+
+Discovery queries must be paginated and bounded.
+
+## Realtime
+
+Chat/presence events must be authorized for the relevant conversation/user.
+
+Do not trust client-supplied:
+- sender identity
+- conversation membership
+- message ownership
+- read-state ownership
+
+Use the authenticated user identity from the server-side auth context.
+
+## Security
+
+Always consider:
+- rate limits for auth, messaging, discovery, translation, and report endpoints
+- authorization on every conversation/message operation
+- block enforcement
+- report abuse
+- spam prevention
+- upload validation
+- content-size limits
+- idempotency for retried message/notification operations where needed
+
+Never log passwords, access tokens, private message contents, or raw secrets.

@@ -1,0 +1,26 @@
+---
+description: Accessibility and inclusive mobile UX rules
+globs: src/**/*.tsx,app/**/*.tsx,components/**/*.tsx,features/**/*.tsx
+alwaysApply: false
+---
+
+# Accessibility
+
+Every new interactive feature should consider:
+
+- screen reader labels
+- touch target size
+- text scaling
+- contrast
+- focus order
+- keyboard navigation where relevant
+- reduced motion
+- error announcements where supported
+
+Icon-only controls require an accessible label.
+
+Do not use emojis as the only semantic indicator.
+
+Forms must expose validation errors in a way assistive technologies can understand.
+
+Do not disable accessibility to make a design look cleaner.

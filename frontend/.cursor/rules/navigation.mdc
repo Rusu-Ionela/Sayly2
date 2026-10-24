@@ -1,0 +1,62 @@
+---
+description: Navigation rules for onboarding, authenticated app flows, conversations, and deep links
+globs: app/**/*.tsx,src/navigation/**/*.ts,src/navigation/**/*.tsx
+alwaysApply: false
+---
+
+# Navigation
+
+Use the project's existing navigation system.
+
+If Expo Router is installed, prefer file-based routing.
+
+Typical structure:
+
+```text
+(auth)/
+  welcome
+  login
+  signup
+  otp
+(onboarding)/
+  languages
+  proficiency
+  goals
+  interests
+  profile
+(app)/
+  discover
+  conversations
+  notifications
+  profile
+conversation/
+  [id]
+profile/
+  [id]
+settings/
+```
+
+Do not blindly create this exact structure if the repository already has one.
+
+## Auth routing
+
+Unauthenticated users should not reach authenticated routes.
+
+Authenticated users should not repeatedly see onboarding steps they already completed.
+
+Use server-confirmed auth/session state.
+
+## Deep links
+
+Conversation/profile links must:
+- validate the target resource
+- handle missing/deleted resources
+- respect blocks/privacy
+- avoid exposing private route data
+
+## Back behavior
+
+Mobile back behavior should be predictable.
+Do not intercept back navigation unless the screen has a clear reason.
+
+Forms with unsaved changes should use the existing confirmation pattern if the app supports it.

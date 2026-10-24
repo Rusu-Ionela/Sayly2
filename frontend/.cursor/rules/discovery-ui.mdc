@@ -1,0 +1,60 @@
+---
+description: Language partner discovery UI and learning compatibility rules
+globs: features/discovery/**/*.tsx,features/discovery/**/*.ts,app/**/discover/**/*.tsx
+alwaysApply: false
+---
+
+# Partner Discovery UI
+
+Discovery is for finding language-learning partners.
+
+## Partner cards
+
+Useful information may include:
+- display name
+- profile photo
+- languages spoken
+- languages learning
+- proficiency
+- learning goals
+- interests
+- availability
+- short introduction
+
+Do not show:
+- attractiveness scores
+- dating compatibility
+- romantic labels
+- unnecessary private information
+
+## Filters
+
+Useful filters:
+- language
+- proficiency
+- learning goal
+- interests
+- availability/timezone where appropriate
+
+Keep filters understandable.
+
+## Interaction
+
+Do not default to Tinder-style swipe mechanics.
+
+Prefer:
+- browse
+- filter
+- open profile
+- connect/practice
+- save/bookmark if the product has it
+
+If the product intentionally includes swiping for discovery, it must still represent learning compatibility and not romantic selection.
+
+## Empty states
+
+Explain why there may be no results and offer useful actions:
+- broaden filters
+- add another learning language
+- complete profile
+- try again later

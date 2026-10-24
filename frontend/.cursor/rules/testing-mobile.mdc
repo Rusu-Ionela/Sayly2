@@ -1,0 +1,40 @@
+---
+description: Testing standards for React Native language exchange features
+globs: **/*.test.ts,**/*.test.tsx,**/*.spec.ts,**/*.spec.tsx
+alwaysApply: false
+---
+
+# Mobile Testing
+
+Test behavior, not implementation details.
+
+## High-value flows
+
+Prioritize:
+- signup/login
+- OTP
+- onboarding language selection
+- profile editing
+- partner discovery/filtering
+- connection request
+- conversation list
+- sending/retrying a message
+- corrections
+- block/report
+- logout/session expiry
+
+## Component tests
+
+Test:
+- user-visible states
+- button interactions
+- validation
+- loading/error/empty states
+
+Avoid snapshots as the only test strategy.
+
+## Mocking
+
+Mock network boundaries rather than internal implementation details.
+
+Tests should cover authorization-related UI states without pretending the client is the security boundary.

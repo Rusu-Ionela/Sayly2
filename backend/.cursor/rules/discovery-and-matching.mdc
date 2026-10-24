@@ -1,0 +1,54 @@
+---
+description: Language partner discovery and compatibility rules
+globs: src/modules/discovery/**/*.ts,src/modules/matching/**/*.ts,src/modules/partner-discovery/**/*.ts
+alwaysApply: false
+---
+
+# Discovery & language matching
+
+The discovery system is for language exchange, not dating.
+
+## Matching inputs
+
+Prefer explicit learning data:
+- languages spoken
+- languages being learned
+- proficiency levels
+- learning goals
+- interests/topics
+- preferred practice formats
+- availability/timezone
+- age eligibility rules if the product requires them
+
+Do not infer romantic intent or rank users by appearance.
+
+## Mutual compatibility
+
+A strong candidate usually has:
+- a language the current user wants to learn
+- a language the candidate wants to learn that the current user can practice
+- compatible proficiency/learning goals
+- compatible communication preferences
+
+Compatibility should remain explainable.
+
+Avoid an opaque score unless product requirements explicitly need one.
+
+## Discovery API
+
+- Paginate all lists.
+- Use stable cursors where the dataset can change frequently.
+- Exclude blocked users and users who blocked the requester.
+- Exclude suspended/deactivated accounts.
+- Respect privacy/discovery settings.
+- Avoid returning private contact details.
+
+## Matching state
+
+If the product has an explicit partner connection/match feature, model its state clearly, for example:
+
+pending → accepted → active
+pending → rejected/expired
+active → ended
+
+Do not overload "match" to mean both recommendation and relationship state.

@@ -1,0 +1,58 @@
+---
+description: React Native performance, lists, images, animations, and render optimization
+globs: src/**/*.tsx,src/**/*.ts,app/**/*.tsx,components/**/*.tsx
+alwaysApply: false
+---
+
+# Mobile Performance
+
+Performance matters because many users will be on mid-range devices and variable mobile networks.
+
+## Lists
+
+For large or frequently updated lists:
+- prefer FlashList when installed
+- provide stable keys
+- avoid expensive renderItem work
+- avoid nested virtualized lists
+- paginate server data
+
+Important lists:
+- discovery
+- conversations
+- messages
+- notifications
+
+## Images
+
+- use appropriate dimensions
+- resize/compress where possible
+- cache remote images
+- show placeholders
+- avoid loading huge originals into small avatars
+
+## Animations
+
+Use Reanimated for meaningful animations.
+
+Good uses:
+- screen transitions
+- bottom sheets
+- expanding/collapsing content
+- subtle message interactions
+- onboarding progress
+
+Avoid animations that:
+- delay core actions
+- run continuously without purpose
+- make text difficult to read
+
+Respect reduced-motion preferences when practical.
+
+## Rendering
+
+Do not prematurely wrap everything in `memo`.
+
+Optimize based on actual hot paths.
+
+Avoid creating large derived arrays/objects during every render when a stable memoized computation is clearly beneficial.

@@ -1,0 +1,1 @@
+ALTER TABLE "Conversation" ADD CONSTRAINT "Conversation_lastMessageId_Message_id_fk" FOREIGN KEY ("lastMessageId") REFERENCES "public"."Message"("id") ON DELETE set null ON UPDATE no action;

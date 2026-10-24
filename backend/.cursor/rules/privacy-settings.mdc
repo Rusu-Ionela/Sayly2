@@ -1,0 +1,45 @@
+---
+description: Profile visibility, privacy, account deletion, and user-data rules
+globs: src/modules/users/**/*.ts,src/modules/profiles/**/*.ts,src/modules/settings/**/*.ts
+alwaysApply: false
+---
+
+# Privacy & account lifecycle
+
+## Public profile
+
+Only expose fields intended for discovery, such as:
+- display name
+- profile photo
+- country/city at coarse granularity
+- languages
+- proficiency
+- learning goals
+- interests
+- short bio
+- availability
+
+Never expose private account fields through discovery APIs.
+
+## Privacy controls
+
+Support the repository's actual settings model for:
+- discovery visibility
+- message permissions
+- profile visibility
+- notification preferences
+- online/presence visibility
+
+## Account deletion
+
+Deletion must follow the product's actual retention policy.
+
+Consider:
+- anonymizing authored content where required
+- removing private profile data
+- revoking sessions/tokens
+- disabling discovery
+- deactivating device tokens
+- handling conversations and reports consistently
+
+Do not implement destructive deletion casually without checking existing data-retention requirements.

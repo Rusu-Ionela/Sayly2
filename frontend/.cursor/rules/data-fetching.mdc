@@ -1,0 +1,67 @@
+---
+description: API integration, TanStack Query, caching, mutations, and offline-aware mobile behavior
+globs: src/api/**/*.ts,src/hooks/**/*.ts,features/**/*.ts,features/**/*.tsx
+alwaysApply: false
+---
+
+# Data Fetching
+
+If TanStack Query is installed, use it for server state.
+
+## Queries
+
+Query keys must be:
+- stable
+- specific
+- typed
+
+Examples:
+
+```text
+['profile', userId]
+['discover', filters]
+['conversation', conversationId]
+['messages', conversationId, cursor]
+```
+
+## Mutations
+
+Use mutations for:
+- send message
+- connect to partner
+- update profile
+- block/report
+- mark notifications read
+- update settings
+
+Invalidate or update only the relevant cache.
+
+## Pagination
+
+Use cursor pagination where the backend supports it.
+
+Never fetch unlimited discovery results or message history.
+
+## Errors
+
+Distinguish:
+- network error
+- authentication error
+- validation error
+- permission/block error
+- not found
+- server error
+
+Show the appropriate UX.
+
+## Offline
+
+Mobile networks are unreliable.
+
+Where appropriate:
+- cache safe read-only data
+- preserve unsent message drafts
+- retry idempotent requests
+- reconcile optimistic state with server state
+
+Do not blindly retry non-idempotent mutations.

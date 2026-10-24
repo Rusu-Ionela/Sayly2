@@ -1,0 +1,33 @@
+---
+description: Secure media upload rules for profiles, chat, and learning content
+globs: src/modules/media/**/*.ts,src/modules/uploads/**/*.ts,src/infrastructure/storage/**/*.ts
+alwaysApply: false
+---
+
+# Media & uploads
+
+Media may be used for:
+- profile pictures
+- chat attachments
+- voice practice
+- learning materials
+
+## Server-side requirements
+
+Validate:
+- authenticated owner/uploader
+- MIME type
+- extension
+- file size
+- upload purpose
+- storage key ownership
+
+Do not trust client-provided MIME types alone when the storage layer supports content inspection.
+
+Use signed/private URLs for private media.
+
+Never expose storage credentials to clients.
+
+Do not allow arbitrary path/key input to become a storage path.
+
+Apply retention/deletion rules to media associated with deleted users where required.

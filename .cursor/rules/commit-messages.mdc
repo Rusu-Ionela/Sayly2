@@ -1,0 +1,33 @@
+---
+description: Commit message style matching the repo (bullet list, no AI attribution)
+alwaysApply: true
+---
+
+# Git commit messages
+
+When the user asks for a commit, write the message like aryansoni13's commits on this repo.
+
+## Format
+
+1. Subject (one line): `feat|fix|refactor(<area>): <what changed>`
+2. Blank line
+3. Body: 4–8 bullets, each starting with `- ` and a past-tense verb (`Added`, `Updated`, `Implemented`, `Refactored`).
+4. Each bullet says a concrete change (file/area + behavior). No filler like "improving user experience" unless tied to a real UI change.
+
+## Do not
+
+- Do not mention Cursor, Copilot, ChatGPT, AI, or any tool
+- Do not add `Co-authored-by: Cursor` or similar trailers
+- Do not write a single vague sentence as the body
+
+## Example
+
+```
+feat(connections): [CONN-001] add connection requests with optional intro
+
+- Added POST /connections/request validation for an optional intro (max 280 characters).
+- Rejected self-requests, missing users, and duplicate pending/accepted pairs with 400/404/409.
+- Documented the endpoint in OpenAPI and added Vitest coverage.
+- Added a Connect sheet with character counter, inline errors, and a success toast.
+- Showed Request Pending on discovery cards and public profiles after send.
+```

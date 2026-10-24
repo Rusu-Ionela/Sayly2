@@ -1,0 +1,1 @@
+export { topicsRouter } from "./routes";

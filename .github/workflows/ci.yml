@@ -1,0 +1,100 @@
+name: CI
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend/server
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: backend/server/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck:all
+      - run: npm run build
+      - run: npm test
+
+  backend-db:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend/server
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: sayly_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/sayly_test
+      DIRECT_URL: postgresql://postgres:postgres@localhost:5432/sayly_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: backend/server/package-lock.json
+      - run: npm ci
+      # Apply the same ordered migration history used by production. This catches
+      # drift between schema.ts and the journal instead of masking it with push.
+      - run: npm run db:migrate
+      - run: npx vitest run src/db/integration.test.ts
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend/client
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/client/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm test
+
+  workflow-lint:
+    name: Lint GitHub Actions workflows
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: rhysd/actionlint@v1
+
+  quality-gate:
+    name: Quality gate
+    if: always()
+    needs: [backend, backend-db, frontend, workflow-lint]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require every validation job to pass
+        env:
+          BACKEND_RESULT: ${{ needs.backend.result }}
+          DATABASE_RESULT: ${{ needs.backend-db.result }}
+          FRONTEND_RESULT: ${{ needs.frontend.result }}
+          WORKFLOW_RESULT: ${{ needs.workflow-lint.result }}
+        run: |
+          test "$BACKEND_RESULT" = "success"
+          test "$DATABASE_RESULT" = "success"
+          test "$FRONTEND_RESULT" = "success"
+          test "$WORKFLOW_RESULT" = "success"

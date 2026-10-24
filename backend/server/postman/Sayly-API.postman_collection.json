@@ -1,0 +1,920 @@
+{
+  "info": {
+    "_postman_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "name": "Sayly API",
+    "description": "Sayly language-exchange backend for frontend code review.\n\n## Setup\n1. Import this collection and `Sayly-Local.postman_environment.json`.\n2. Select the **Sayly Local** environment.\n3. Start the API (`cd backend/server && npm run dev`). Default base URL: `http://localhost:4000`.\n4. Optional: seed demo users with `npx tsx scripts/seed-demo-users.ts`.\n\n## Demo accounts (password: `sayly123`)\n- `maria@sayly.test`\n- `james@sayly.test`\n- `lucia@sayly.test`\n- `sayly@demo.com`\n\n## Auth\nCollection auth is Bearer `{{accessToken}}`.\nLogin / Register / Refresh test scripts save `accessToken`, `refreshToken`, and `userId` into the active environment.\n\n## Suggested review flow\nAuth → Languages → Onboarding/Profile → Discover → Connections → Chat → Media → Safety.\n\n## Notes\n- `/discover` and `/discovery` are aliases.\n- `/messaging/*` routes are legacy aliases of `/conversations/*`.\n- `/matching/*` returns 501 (stubs).\n- Socket.IO events are not covered here; use the HTTP chat fallbacks for review.\n- Swagger UI (if enabled): `{{baseUrl}}/api-docs`",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:4000"
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "refreshToken",
+      "value": ""
+    },
+    {
+      "key": "userId",
+      "value": ""
+    },
+    {
+      "key": "partnerUserId",
+      "value": ""
+    },
+    {
+      "key": "connectionId",
+      "value": ""
+    },
+    {
+      "key": "conversationId",
+      "value": ""
+    },
+    {
+      "key": "messageId",
+      "value": ""
+    },
+    {
+      "key": "challengeId",
+      "value": ""
+    },
+    {
+      "key": "resetCode",
+      "value": ""
+    },
+    {
+      "key": "mediaFilename",
+      "value": ""
+    },
+    {
+      "key": "mediaExp",
+      "value": ""
+    },
+    {
+      "key": "mediaSig",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "GET Health",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/health",
+            "description": "Liveness probe. Returns `{ ok: true }`."
+          }
+        },
+        {
+          "name": "GET Ready",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/ready",
+            "description": "Readiness probe (DB + Redis). 503 when draining or dependencies are down."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "description": "Public auth + session. Rate-limited. Used by Login, SignUp, Forgot/Reset, apiClient refresh.",
+      "item": [
+        {
+          "name": "POST Register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const body = pm.response.json();",
+                  "  if (body.accessToken) pm.environment.set('accessToken', body.accessToken);",
+                  "  if (body.refreshToken) pm.environment.set('refreshToken', body.refreshToken);",
+                  "  if (body.user && body.user.id) pm.environment.set('userId', body.user.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"reviewer+{{$timestamp}}@sayly.test\",\n  \"password\": \"SecurePass1\",\n  \"displayName\": \"Reviewer\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/register",
+            "description": "Create user + session. Password ≥8 with letter+number. Saves tokens on 201."
+          }
+        },
+        {
+          "name": "POST Login (demo)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const body = pm.response.json();",
+                  "  if (body.accessToken) pm.environment.set('accessToken', body.accessToken);",
+                  "  if (body.refreshToken) pm.environment.set('refreshToken', body.refreshToken);",
+                  "  if (body.user && body.user.id) pm.environment.set('userId', body.user.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"maria@sayly.test\",\n  \"password\": \"sayly123\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/login",
+            "description": "Login as seeded demo user. Saves `accessToken`, `refreshToken`, `userId`."
+          }
+        },
+        {
+          "name": "POST Login (partner demo)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const body = pm.response.json();",
+                  "  if (body.user && body.user.id) pm.environment.set('partnerUserId', body.user.id);",
+                  "  console.log('Saved partnerUserId only. Re-run Login (demo) to restore your session.');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"james@sayly.test\",\n  \"password\": \"sayly123\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/login",
+            "description": "Helper to look up James's user id. Script saves only `partnerUserId` (not tokens), so your Maria session stays active. Prefer Discover, which also auto-fills `partnerUserId`."
+          }
+        },
+        {
+          "name": "POST Refresh",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const body = pm.response.json();",
+                  "  if (body.accessToken) pm.environment.set('accessToken', body.accessToken);",
+                  "  if (body.refreshToken) pm.environment.set('refreshToken', body.refreshToken);",
+                  "  if (body.user && body.user.id) pm.environment.set('userId', body.user.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/refresh",
+            "description": "Rotate refresh token. Reuse of a revoked refresh revokes the whole family."
+          }
+        },
+        {
+          "name": "POST Logout",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/logout",
+            "description": "Revoke refresh token if present. Always returns ok."
+          }
+        },
+        {
+          "name": "GET Auth Me",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/auth/me",
+            "description": "Auth summary for the current Bearer token."
+          }
+        },
+        {
+          "name": "POST Forgot Password",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const body = pm.response.json();",
+                  "  if (body.challengeId) pm.environment.set('challengeId', body.challengeId);",
+                  "  if (body.devCode) pm.environment.set('resetCode', body.devCode);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"maria@sayly.test\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/forgot-password",
+            "description": "Issues reset challenge. Always ok for unknown emails. Saves `challengeId`. The 6-digit code is emailed (check SMTP / mail logs in local)."
+          }
+        },
+        {
+          "name": "POST Reset Password",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"challengeId\": \"{{challengeId}}\",\n  \"token\": \"{{resetCode}}\",\n  \"password\": \"SecurePass1\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/reset-password",
+            "description": "Requires `challengeId` + 6-digit `token` (from email) + new password. Revokes all refresh tokens."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users / Profile",
+      "description": "Bearer required. Used by Profile, EditProfile, Onboarding, LanguagePreferences, Settings, PublicProfile.",
+      "item": [
+        {
+          "name": "GET Users Me",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/users/me",
+            "description": "Full CurrentUserDto (email, profile, languages, goals)."
+          }
+        },
+        {
+          "name": "PUT Onboarding",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"displayName\": \"Reviewer\",\n  \"bio\": \"Practicing languages for travel and conversation.\",\n  \"country\": \"RO\",\n  \"dateOfBirth\": \"1998-05-12\",\n  \"spokenLanguages\": [\n    { \"languageId\": \"ro\", \"proficiency\": \"NATIVE\" }\n  ],\n  \"learningLanguages\": [\n    { \"languageId\": \"en\", \"proficiency\": \"INTERMEDIATE\" }\n  ],\n  \"practiceGoals\": [\"Conversation\", \"Speaking\", \"Vocabulary\"]\n}"
+            },
+            "url": "{{baseUrl}}/users/me/onboarding",
+            "description": "Complete onboarding. spokenLanguages 1–10, learningLanguages 1–5, ≤1 NATIVE; cannot overlap same language as both."
+          }
+        },
+        {
+          "name": "PUT Me Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"displayName\": \"Maria Popescu\",\n  \"bio\": \"Romanian speaker looking for patient English conversation partners.\",\n  \"country\": \"RO\",\n  \"practiceGoals\": [\"Conversation\", \"Speaking\", \"Vocabulary\"],\n  \"spokenLanguages\": [\n    { \"languageId\": \"ro\", \"proficiency\": \"NATIVE\" }\n  ],\n  \"learningLanguages\": [\n    { \"languageId\": \"en\", \"proficiency\": \"INTERMEDIATE\" }\n  ]\n}"
+            },
+            "url": "{{baseUrl}}/users/me/profile",
+            "description": "Atomic profile edit (PRO-002). At least one field required. Languages must be provided together if updating either."
+          }
+        },
+        {
+          "name": "PATCH Me (legacy)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bio\": \"Updated bio via legacy PATCH.\"\n}"
+            },
+            "url": "{{baseUrl}}/users/me",
+            "description": "Legacy partial profile update."
+          }
+        },
+        {
+          "name": "PATCH Change Password",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"sayly123\",\n  \"newPassword\": \"SecurePass1\"\n}"
+            },
+            "url": "{{baseUrl}}/users/me/password",
+            "description": "Change password for authenticated user."
+          }
+        },
+        {
+          "name": "DELETE Me",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/users/me",
+            "description": "Soft-delete account. Destructive — use a throwaway user."
+          }
+        },
+        {
+          "name": "GET My Languages",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/users/me/languages",
+            "description": "Grouped `{ SPEAKS, LEARNING }`."
+          }
+        },
+        {
+          "name": "PUT My Languages",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"spokenLanguages\": [\n    { \"languageId\": \"ro\", \"proficiency\": \"NATIVE\" }\n  ],\n  \"learningLanguages\": [\n    { \"languageId\": \"en\", \"proficiency\": \"INTERMEDIATE\" }\n  ]\n}"
+            },
+            "url": "{{baseUrl}}/users/me/languages",
+            "description": "Full language replace → grouped response."
+          }
+        },
+        {
+          "name": "PATCH My Languages",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"spokenLanguages\": [\n    { \"languageId\": \"ro\", \"proficiency\": \"NATIVE\" }\n  ],\n  \"learningLanguages\": [\n    { \"languageId\": \"en\", \"proficiency\": \"INTERMEDIATE\" }\n  ]\n}"
+            },
+            "url": "{{baseUrl}}/users/me/languages",
+            "description": "Same sync body as PUT; returns full CurrentUserDto."
+          }
+        },
+        {
+          "name": "GET Public Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/users/{{partnerUserId}}/public-profile",
+            "description": "Safe public profile (PRO-001 / DISC-006). Set `partnerUserId` from Discover."
+          }
+        },
+        {
+          "name": "GET User By Id (legacy)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/users/{{partnerUserId}}",
+            "description": "Legacy public profile (age ok, no DOB)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Languages",
+      "item": [
+        {
+          "name": "GET Language Catalog",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/languages",
+            "description": "Public catalog: id, code, name, flagEmoji, sortOrder."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Discovery",
+      "description": "Partner feed with match scoring. Used by Discover screen.",
+      "item": [
+        {
+          "name": "GET Discover",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const body = pm.response.json();",
+                  "  const users = body.items || body.data || body.users || [];",
+                  "  if (Array.isArray(users) && users.length > 0) {",
+                  "    const first = users[0];",
+                  "    const id = first.id || (first.user && first.user.id);",
+                  "    if (id) pm.environment.set('partnerUserId', id);",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/discover?page=1&limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "discover"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "spokenLanguageId",
+                  "value": "en",
+                  "disabled": true
+                },
+                {
+                  "key": "learningLanguageId",
+                  "value": "ro",
+                  "disabled": true
+                },
+                {
+                  "key": "country",
+                  "value": "RO",
+                  "disabled": true
+                },
+                {
+                  "key": "proficiency",
+                  "value": "INTERMEDIATE",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Paginated partner cards. Optional filters: search, spoken/learning language, country, proficiency. Saves first card id to `partnerUserId`."
+          }
+        },
+        {
+          "name": "GET Discover User",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/discover/users/{{partnerUserId}}",
+            "description": "Alias of GET /users/:id/public-profile."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Chat / Conversations",
+      "description": "Primary chat HTTP API. Used by Chats inbox + Conversation screen.",
+      "item": [
+        {
+          "name": "GET Conversations",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const body = pm.response.json();",
+                  "  const items = body.items || body.data || body.conversations || [];",
+                  "  if (Array.isArray(items) && items.length > 0) {",
+                  "    const first = items[0];",
+                  "    const id = first.id || first.conversationId;",
+                  "    if (id) pm.environment.set('conversationId', id);",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/conversations?limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "conversations"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "cursor",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Inbox: partner, last message, unread, online. Saves first conversation id."
+          }
+        },
+        {
+          "name": "GET Messages",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const body = pm.response.json();",
+                  "  const items = body.items || body.data || body.messages || [];",
+                  "  if (Array.isArray(items) && items.length > 0) {",
+                  "    const first = items[0];",
+                  "    if (first.id) pm.environment.set('messageId', first.id);",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/conversations/{{conversationId}}/messages?limit=30",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "conversations",
+                "{{conversationId}}",
+                "messages"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "30"
+                },
+                {
+                  "key": "before",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Message history. Optional before / page / limit."
+          }
+        },
+        {
+          "name": "POST Send Text Message",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  const body = pm.response.json();",
+                  "  const id = body.id || (body.message && body.message.id);",
+                  "  if (id) pm.environment.set('messageId', id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Bună! How are you practicing today?\",\n  \"type\": \"TEXT\",\n  \"clientMessageId\": \"client-msg-{{$timestamp}}\"\n}"
+            },
+            "url": "{{baseUrl}}/conversations/{{conversationId}}/messages",
+            "description": "Persist message. content 1–4000. Optional type, durationMs, mimeType, thumbnailUrl, caption, clientMessageId."
+          }
+        },
+        {
+          "name": "POST Send Image Message",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"/media/files/example.jpg\",\n  \"type\": \"IMAGE\",\n  \"mimeType\": \"image/jpeg\",\n  \"caption\": \"Practice photo\",\n  \"clientMessageId\": \"client-img-{{$timestamp}}\"\n}"
+            },
+            "url": "{{baseUrl}}/conversations/{{conversationId}}/messages",
+            "description": "Typical flow: upload via Media → send returned URL as content with type IMAGE."
+          }
+        },
+        {
+          "name": "PATCH Mark Conversation Read",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": "{{baseUrl}}/conversations/{{conversationId}}/read",
+            "description": "Mark inbound unread messages as READ."
+          }
+        },
+        {
+          "name": "POST Translate Message",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetLang\": \"en\"\n}"
+            },
+            "url": "{{baseUrl}}/conversations/{{conversationId}}/messages/{{messageId}}/translate",
+            "description": "Translate message (MyMemory); cached per language."
+          }
+        },
+        {
+          "name": "POST Transcribe Message",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/conversations/{{conversationId}}/messages/{{messageId}}/transcribe",
+            "description": "Whisper transcription for VOICE/VIDEO when OPENAI_API_KEY is set."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Media",
+      "item": [
+        {
+          "name": "POST Upload File",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const body = pm.response.json();",
+                  "  if (body.url) {",
+                  "    try {",
+                  "      const parsed = new URL(body.url, pm.environment.get('baseUrl') || 'http://localhost:4000');",
+                  "      const parts = parsed.pathname.split('/');",
+                  "      const filename = parts[parts.length - 1];",
+                  "      if (filename) pm.environment.set('mediaFilename', filename);",
+                  "      if (parsed.searchParams.get('exp')) pm.environment.set('mediaExp', parsed.searchParams.get('exp'));",
+                  "      if (parsed.searchParams.get('sig')) pm.environment.set('mediaSig', parsed.searchParams.get('sig'));",
+                  "    } catch (e) {}",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": [],
+                  "description": "Select an image/audio/video file (max 40 MB)."
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/media/uploads",
+            "description": "Multipart field `file`. Returns `{ url, mimeType, kind, size }`."
+          }
+        },
+        {
+          "name": "GET Media File",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/media/files/{{mediaFilename}}?exp={{mediaExp}}&sig={{mediaSig}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "media",
+                "files",
+                "{{mediaFilename}}"
+              ],
+              "query": [
+                {
+                  "key": "exp",
+                  "value": "{{mediaExp}}"
+                },
+                {
+                  "key": "sig",
+                  "value": "{{mediaSig}}"
+                }
+              ]
+            },
+            "description": "Signed static file. Requires exp + sig from upload URL."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Safety",
+      "description": "Blocks and reports. Used by BlockReportMenu.",
+      "item": [
+        {
+          "name": "POST Block User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{partnerUserId}}\"\n}"
+            },
+            "url": "{{baseUrl}}/blocks",
+            "description": "Create block; cancels PENDING/ACCEPTED connections both ways."
+          }
+        },
+        {
+          "name": "POST Report User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{partnerUserId}}\",\n  \"reason\": \"Spam\",\n  \"details\": \"Optional details for review\",\n  \"messageId\": \"{{messageId}}\"\n}"
+            },
+            "url": "{{baseUrl}}/reports",
+            "description": "Reasons: Spam | Harassment | Inappropriate Content. Optional messageId and details ≤1000."
+          }
+        }
+      ]
+    }
+  ]
+}

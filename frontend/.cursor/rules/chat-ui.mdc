@@ -1,0 +1,72 @@
+---
+description: Realtime language-exchange chat UI rules
+globs: features/chat/**/*.tsx,features/messages/**/*.tsx,app/**/conversation/**/*.tsx
+alwaysApply: false
+---
+
+# Chat UI
+
+Chat is a core learning feature.
+
+## Message types
+
+Depending on backend support:
+- text
+- image/media
+- voice/audio
+- correction
+- reaction
+- translation/AI suggestion
+
+Do not assume a message type exists unless the API supports it.
+
+## Message rendering
+
+Message components should handle:
+- sending
+- sent
+- delivered
+- read
+- failed
+- retrying
+- edited if supported
+
+Never hide failed messages silently.
+
+## Composer
+
+The composer should support the backend's actual capabilities without becoming overloaded.
+
+Keep primary actions obvious:
+- text input
+- send
+- attachment/voice where supported
+
+## Corrections
+
+Corrections should visually distinguish:
+- original learner message
+- correction
+- correction author
+- optional explanation
+
+Never visually imply that the original message was replaced.
+
+## Realtime
+
+Handle:
+- incoming messages
+- typing
+- presence
+- read receipts
+- connection/reconnection
+
+Use optimistic UI carefully.
+A failed optimistic message must be recoverable.
+
+## Pagination
+
+Load older messages incrementally.
+Do not fetch the entire conversation history at once.
+
+Preserve scroll position when prepending older messages.
