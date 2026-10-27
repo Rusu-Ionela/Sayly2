@@ -2,6 +2,8 @@ import { memo } from "react";
 import { Modal, Pressable, StyleSheet } from "react-native";
 import { Image } from "expo-image";
 
+import { remoteImageSource } from "@/lib/mediaUrl";
+
 type ImageViewerModalProps = {
   /** Resolved image URL; the modal stays closed while null. */
   uri: string | null;
@@ -23,7 +25,7 @@ export const ImageViewerModal = memo(function ImageViewerModal({
       >
         {uri ? (
           <Image
-            source={{ uri }}
+            source={remoteImageSource(uri)}
             style={styles.image}
             contentFit="contain"
             cachePolicy="memory-disk"

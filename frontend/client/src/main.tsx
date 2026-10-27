@@ -1,6 +1,5 @@
-import React from "react";
 import { View } from "react-native";
-import { QueryClientProvider } from "@tanstack/react-query";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AuthProvider } from "@/features/auth";
@@ -9,6 +8,7 @@ import { SocketProvider } from "@/features/chat/socket/SocketProvider";
 import { API_BASE_URL } from "@/lib/apiClient";
 import { log } from "@/lib/logger";
 import { queryClient } from "@/lib/queryClient";
+import { persistOptions } from "@/lib/queryPersistence";
 import { InAppBannerProvider } from "@/features/notifications";
 import { RootNavigator } from "@/navigation/RootNavigator";
 import { AmbientBackground } from "@/shared/components/AmbientBackground";
@@ -40,7 +40,7 @@ function AppShell() {
     <View style={{ flex: 1 }}>
       <AmbientBackground />
       <View style={{ flex: 1 }}>
-        <QueryClientProvider client={queryClient}>
+        <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
           <AuthProvider>
             <SocketProvider>
               <CallProvider>
@@ -52,7 +52,7 @@ function AppShell() {
               </CallProvider>
             </SocketProvider>
           </AuthProvider>
-        </QueryClientProvider>
+        </PersistQueryClientProvider>
       </View>
     </View>
   );

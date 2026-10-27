@@ -1,4 +1,4 @@
-﻿const { defineConfig } = require("eslint/config");
+const { defineConfig } = require("eslint/config");
 const expoConfig = require("eslint-config-expo/flat");
 
 module.exports = defineConfig([
@@ -12,6 +12,13 @@ module.exports = defineConfig([
       "web-build/**",
       "**/*.test.ts",
     ],
+  },
+  {
+    // Tooling config files run in Node, not in the app.
+    files: ["*.config.js"],
+    languageOptions: {
+      globals: { __dirname: "readonly", module: "writable", require: "readonly" },
+    },
   },
   {
     rules: {

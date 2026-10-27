@@ -3,7 +3,6 @@
     "name": "Sayly",
     "slug": "sayly",
     "version": "1.0.0",
-    "sdkVersion": "57.0.0",
     "platforms": ["ios", "android", "web"],
     "scheme": "sayly",
     "orientation": "portrait",
@@ -17,7 +16,15 @@
         "android.permission.CAMERA",
         "android.permission.READ_MEDIA_IMAGES",
         "android.permission.READ_MEDIA_VIDEO",
-        "android.permission.READ_MEDIA_AUDIO"
+        "android.permission.READ_MEDIA_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+        "android.permission.ACCESS_NETWORK_STATE",
+        "android.permission.INTERNET",
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.WAKE_LOCK",
+        "android.permission.BLUETOOTH"
       ]
     },
     "web": {
@@ -71,7 +78,14 @@
         {
           "color": "#5B6CFF"
         }
-      ]
-    ]
+      ],
+      "expo-image"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "a38cf0fc-c2a8-47c9-99c1-eb0aa70b64e6"
+      }
+    },
+    "owner": "ionela_r"
   }
 }

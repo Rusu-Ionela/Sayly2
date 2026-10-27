@@ -7,7 +7,8 @@ jest.mock("expo-secure-store", () => ({
 // React 19 / react-test-renderer act environment for AuthProvider tests.
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-// Native NetInfo module is not available under Jest.
+// Native NetInfo module is not available under Jest (jest.mock factories must use require).
 jest.mock("@react-native-community/netinfo", () =>
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   require("@react-native-community/netinfo/jest/netinfo-mock.js"),
 );

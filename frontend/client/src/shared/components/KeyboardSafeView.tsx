@@ -1,5 +1,12 @@
 import { useCallback, useRef, useState, type ReactNode } from "react";
-import { KeyboardAvoidingView, Platform, View, type StyleProp, type ViewStyle } from "react-native";
+import {
+  KeyboardAvoidingView,
+  Platform,
+  View,
+  type StyleProp,
+  type ViewInstance,
+  type ViewStyle,
+} from "react-native";
 
 import { keyboardController } from "@/shared/keyboard/keyboardController";
 
@@ -31,7 +38,7 @@ export function KeyboardSafeView({ children, style }: KeyboardSafeViewProps) {
 }
 
 function MeasuredKeyboardAvoidingView({ children, style }: KeyboardSafeViewProps) {
-  const ref = useRef<View>(null);
+  const ref = useRef<ViewInstance>(null);
   const [topInWindow, setTopInWindow] = useState(0);
 
   const measure = useCallback(() => {

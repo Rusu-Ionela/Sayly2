@@ -29,7 +29,7 @@ export function PressableScale({
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
   }));
-  const { shell, content } = splitPressableStyle(StyleSheet.flatten(style));
+  const { shell, content } = splitPressableStyle(StyleSheet.flatten(style) ?? undefined);
 
   // Avoid Animated.createAnimatedComponent(Pressable) — it throws on web.
   // Avoid nesting PressableScale inside PressableScale on web (invalid nested <button>).

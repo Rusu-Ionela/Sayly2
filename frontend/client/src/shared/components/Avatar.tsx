@@ -2,7 +2,7 @@ import { Image } from "expo-image";
 import { StyleSheet, Text, View } from "react-native";
 import { useEffect, useState } from "react";
 
-import { resolveMediaUrl } from "@/lib/mediaUrl";
+import { remoteImageSource } from "@/lib/mediaUrl";
 import { useColors } from "@/shared/theme";
 
 type AvatarProps = {
@@ -24,7 +24,8 @@ function initialsFromName(name?: string) {
 
 export function Avatar({ uri, size = 40, name, square }: AvatarProps) {
   const colors = useColors();
-  const resolved = resolveMediaUrl(uri);
+  const source = remoteImageSource(uri);
+  const resolved = source?.uri;
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
@@ -42,13 +43,13 @@ export function Avatar({ uri, size = 40, name, square }: AvatarProps) {
   if (resolved && !failed) {
     return (
       <Image
-        source={{ uri: resolved }}
+        source={source}
         accessibilityLabel={name ? `Photo of ${name}` : "Profile photo"}
         style={ring}
         contentFit="cover"
         cachePolicy="memory-disk"
         transition={120}
-        recyclingKey={resolved}
+        recyclingKey={source?.cacheKey ?? resolved}
         onError={() => setFailed(true)}
       />
     );

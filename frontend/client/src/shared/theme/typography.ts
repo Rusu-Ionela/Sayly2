@@ -1,4 +1,4 @@
-import { lightColors, type ThemeColors } from "./colors";
+import type { ThemeColors } from "./colors";
 
 export function getTypography(colors: ThemeColors) {
   return {
@@ -41,5 +41,3 @@ export function getTypography(colors: ThemeColors) {
     },
   } as const;
 }
-
-export const typography = getTypography(lightColors);

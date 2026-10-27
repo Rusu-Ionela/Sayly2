@@ -8,14 +8,20 @@ import { ChatDetailScreen, ChatsScreen } from "@/features/chat";
 import { CollectionScreen } from "@/features/collections";
 import { DiscoverScreen } from "@/features/discovery";
 import { FollowingScreen } from "@/features/follows";
+import { IcebreakerAnswersScreen } from "@/features/icebreakers";
 import { ConnectionsScreen } from "@/features/connections";
 import {
   CreateGroupScreen,
   GroupChatScreen,
   GroupDetailScreen,
+  GroupFeedScreen,
+  GroupPostScreen,
   GroupsScreen,
 } from "@/features/groups";
+import { CreatePartyRoomScreen, PartyRoomScreen, PartyRoomsScreen } from "@/features/partyRooms";
 import { LanguagePreferencesScreen } from "@/features/languages";
+import { FriendsLeaderboardScreen } from "@/features/leaderboard";
+import { FlashQuestScreen } from "@/features/pulse";
 import {
   NotificationsBridge,
   NotificationsScreen,
@@ -31,6 +37,7 @@ import {
 import { BlockedUsersScreen } from "@/features/safety";
 import { FaqScreen, GuidelinesScreen, SupportFormScreen } from "@/features/support";
 import { LegalDocumentScreen, SettingsScreen } from "@/features/settings";
+import { StreakBridge } from "@/features/streaks";
 import { TopicsScreen } from "@/features/topics";
 import { ProfileVisitsScreen } from "@/features/visitors";
 import { ConnectionStatusBanner } from "@/shared/components/ConnectionStatusBanner";
@@ -110,6 +117,7 @@ function MainTabs() {
           options={{
             headerShown: false,
             tabBarIcon: ionicon("person-circle", "person-circle-outline"),
+            tabBarBadge: badges.profile,
           }}
         />
       </Tab.Navigator>
@@ -125,6 +133,7 @@ export function MainNavigator() {
   return (
     <>
       <NotificationsBridge />
+      <StreakBridge />
       <Stack.Navigator
         screenOptions={{
           headerStyle: {
@@ -158,6 +167,11 @@ export function MainNavigator() {
           options={{ headerShown: false, title: "Chat" }}
         />
         <Stack.Screen
+          name="IcebreakerAnswers"
+          component={IcebreakerAnswersScreen}
+          options={{ title: "Today's icebreaker" }}
+        />
+        <Stack.Screen
           name="EditProfile"
           component={EditProfileScreen}
           options={{ title: "Edit profile", headerBackButtonMenuEnabled: false }}
@@ -171,6 +185,23 @@ export function MainNavigator() {
           name="GroupChat"
           component={GroupChatScreen}
           options={{ title: "Discussion" }}
+        />
+        <Stack.Screen name="GroupFeed" component={GroupFeedScreen} options={{ title: "Feed" }} />
+        <Stack.Screen name="GroupPost" component={GroupPostScreen} options={{ title: "Post" }} />
+        <Stack.Screen
+          name="PartyRooms"
+          component={PartyRoomsScreen}
+          options={{ title: "Party rooms" }}
+        />
+        <Stack.Screen
+          name="CreatePartyRoom"
+          component={CreatePartyRoomScreen}
+          options={{ title: "Start a room", presentation: "modal" }}
+        />
+        <Stack.Screen
+          name="PartyRoom"
+          component={PartyRoomScreen}
+          options={{ headerShown: false, title: "Party room", gestureEnabled: false }}
         />
         <Stack.Screen
           name="CreateGroup"
@@ -191,6 +222,16 @@ export function MainNavigator() {
           name="Connections"
           component={ConnectionsScreen}
           options={{ title: "Connections" }}
+        />
+        <Stack.Screen
+          name="FlashQuest"
+          component={FlashQuestScreen}
+          options={{ headerShown: false, title: "Flash Quest", gestureEnabled: false }}
+        />
+        <Stack.Screen
+          name="FriendsLeaderboard"
+          component={FriendsLeaderboardScreen}
+          options={{ title: "Streak leaderboard" }}
         />
         <Stack.Screen
           name="Notifications"

@@ -3,9 +3,9 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { CompositeScreenProps, NavigatorScreenParams } from "@react-navigation/native";
 
 // Model files, not the support barrel: the barrel re-exports screens that import these types.
-import type { SupportTopic } from "@/features/support/api/supportApi";
 import type { GuidelinesKind } from "@/features/support/model/guidelines";
 import type { SupportFormKind } from "@/features/support/model/supportForms";
+import type { SupportTopic } from "@sayly/shared";
 
 export type AuthStackParamList = {
   Welcome: undefined;
@@ -29,10 +29,22 @@ export type AppStackParamList = {
   PublicProfile: { userId: string };
   /** @deprecated Use PublicProfile — same screen and params. */
   UserPreview: { userId: string };
-  Conversation: { conversationId: string };
+  /** `draft` pre-fills the composer (e.g. replying to an icebreaker answer). */
+  Conversation: { conversationId: string; draft?: string };
+  /** Everyone's answers to today's icebreaker in one language. */
+  IcebreakerAnswers: { languageId: string; languageName: string; question: string };
   EditProfile: undefined;
   GroupDetail: { groupId: string };
   GroupChat: { groupId: string };
+  /** The group's feed: posts, reactions and comments. */
+  GroupFeed: { groupId: string };
+  GroupPost: { groupId: string; postId: string };
+  /** Open live audio rooms; a group's rooms are listed on its screen. */
+  PartyRooms: undefined;
+  /** With `group`, the room belongs to that group and uses its language. */
+  CreatePartyRoom:
+    { group?: { id: string; name: string; languageId: string; languageLabel: string } } | undefined;
+  PartyRoom: { roomId: string };
   CreateGroup: undefined;
   LanguagePreferences: undefined;
   /** Notifications, appearance, blocked members and account. */
@@ -45,6 +57,10 @@ export type AppStackParamList = {
   Following: undefined;
   /** Language-partner requests (consent-based; Follow stays one-way). */
   Connections: undefined;
+  /** 3-minute timed challenge with a partner practising the same language. */
+  FlashQuest: { languageId: string; languageName: string };
+  /** You and your connections ranked by daily streak, with the weekly Pro prize. */
+  FriendsLeaderboard: undefined;
   /** In-app inbox: corrections and references. */
   Notifications: undefined;
   ProfileVisits: { mode: "visitors" | "viewed" };

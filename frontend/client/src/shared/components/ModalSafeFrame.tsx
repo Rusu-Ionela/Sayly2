@@ -8,7 +8,7 @@ import { SafeView } from "@/shared/utils/withoutTextNodes";
 type ModalSafeFrameProps = {
   children: ReactNode;
   style?: StyleProp<ViewStyle>;
-  edges?: Array<"top" | "bottom">;
+  edges?: ("top" | "bottom")[];
 };
 
 /** Safe-area padding for full-screen modals (SafeAreaView is unreliable inside Modal). */

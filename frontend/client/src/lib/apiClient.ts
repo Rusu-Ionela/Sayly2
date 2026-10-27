@@ -215,7 +215,10 @@ export async function ensureAccessToken(): Promise<boolean> {
 /** Refresh a little before expiry so a socket handshake never carries a dying token. */
 const TOKEN_REFRESH_MARGIN_MS = 60_000;
 
-/** `exp` of a JWT in milliseconds, or null when it cannot be read. */
+/**
+ * `exp` of a JWT in milliseconds, or null when it cannot be read.
+ * Used by the socket to time its reauth (and by freshToken.test).
+ */
 export function jwtExpiresAtMs(token: string): number | null {
   const payload = token.split(".")[1];
   if (!payload) return null;

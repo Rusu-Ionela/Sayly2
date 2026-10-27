@@ -1,3 +1,5 @@
+import type { ImageSource } from "expo-image";
+
 import { API_BASE_URL } from "./apiClient";
 
 /** Turn stored media paths into a URL this device can actually load. */
@@ -49,4 +51,16 @@ export function toStableMediaPath(value: string): string {
   }
   const pathOnly = value.slice(index).split("?")[0] ?? value;
   return pathOnly;
+}
+
+/**
+ * expo-image source for a stored or remote image. Uploaded media is cached under its stable
+ * path: the API re-signs URLs (exp/sig) on every response, so caching by the full URL would
+ * download the same photo again each time.
+ */
+export function remoteImageSource(uri?: string | null): ImageSource | undefined {
+  const resolved = resolveMediaUrl(uri);
+  if (!resolved) return undefined;
+  const cacheKey = toStableMediaPath(resolved);
+  return cacheKey === resolved ? { uri: resolved } : { uri: resolved, cacheKey };
 }

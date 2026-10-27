@@ -1,5 +1,6 @@
+import { FlashList } from "@shopify/flash-list";
 import { type ReactElement } from "react";
-import { ActivityIndicator, FlatList, StyleSheet, View } from "react-native";
+import { ActivityIndicator, StyleSheet, View } from "react-native";
 
 import { AppRefreshControl } from "@/shared/components/AppRefreshControl";
 import { Skeleton } from "@/shared/components/Skeleton";
@@ -76,11 +77,11 @@ export function MemberList<TItem>({
   }
 
   return (
-    <FlatList
+    <FlashList
       data={items}
       keyExtractor={keyOf}
       renderItem={({ item }) => renderItem(item)}
-      ListHeaderComponent={header}
+      ListHeaderComponent={header ?? undefined}
       ListEmptyComponent={empty}
       contentContainerStyle={styles.list}
       showsVerticalScrollIndicator={false}
@@ -91,7 +92,7 @@ export function MemberList<TItem>({
       ListFooterComponent={
         state.isFetchingNextPage ? (
           <ActivityIndicator color={colors.accent} style={styles.footer} />
-        ) : null
+        ) : undefined
       }
       refreshControl={
         <AppRefreshControl

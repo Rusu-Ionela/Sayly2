@@ -1,6 +1,4 @@
-﻿{
-  "entry": ["index.ts", "jest.config.js", "babel.config.js"],
+{
   "project": ["src/**/*.{ts,tsx}", "*.{js,ts}"],
-  "ignore": ["**/test/mocks/**"],
-  "ignoreDependencies": ["@expo/ngrok", "babel-preset-expo", "react-native-worklets"]
+  "ignoreDependencies": ["@expo/ngrok"]
 }

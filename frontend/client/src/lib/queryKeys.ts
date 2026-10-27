@@ -33,6 +33,14 @@ export const queryKeys = {
     detail: (groupId: string) => ["groups", "detail", groupId] as const,
     members: (groupId: string, status: string) => ["groups", "members", groupId, status] as const,
     messages: (groupId: string) => ["groups", "messages", groupId] as const,
+    feed: (groupId: string) => ["groups", "feed", groupId] as const,
+    post: (groupId: string, postId: string) => ["groups", "post", groupId, postId] as const,
+    comments: (groupId: string, postId: string) => ["groups", "comments", groupId, postId] as const,
+  },
+  partyRooms: {
+    all: ["party-rooms"] as const,
+    list: (filter: { groupId?: string; languageId?: string }) =>
+      ["party-rooms", "list", filter] as const,
   },
   languages: {
     catalog: ["languages"] as const,
@@ -54,6 +62,30 @@ export const queryKeys = {
   },
   safety: {
     blocks: ["safety", "blocks"] as const,
+  },
+  streak: {
+    me: ["streak", "me"] as const,
+  },
+  connections: {
+    /** Prefix: the request inbox and every per-member connection. */
+    all: ["connections"] as const,
+    with: (userId: string) => ["connections", "with", userId] as const,
+  },
+  leaderboard: {
+    friends: ["leaderboard", "friends"] as const,
+  },
+  icebreakers: {
+    all: ["icebreakers"] as const,
+    today: (languageId: string) => ["icebreakers", "today", languageId] as const,
+    answers: (languageId: string) => ["icebreakers", "answers", languageId] as const,
+  },
+  pulse: {
+    radar: ["pulse", "radar"] as const,
+    sparks: ["pulse", "sparks"] as const,
+    quest: (questId: string) => ["pulse", "quest", questId] as const,
+  },
+  stories: {
+    feed: ["stories", "feed"] as const,
   },
   locations: {
     cities: (country: string, query: string) => ["locations", "cities", country, query] as const,
