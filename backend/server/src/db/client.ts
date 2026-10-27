@@ -10,7 +10,9 @@ const pool = new Pool({
   connectionString: env.databaseUrl,
   max: env.dbPoolMax,
   connectionTimeoutMillis: 5000,
-  idleTimeoutMillis: 30_000,
+  // Opening a TLS connection to the hosted pooler costs ~1.5 s, several times a query. Keep
+  // idle connections for a while so the first request after a short pause is not slow.
+  idleTimeoutMillis: 10 * 60_000,
   statement_timeout: 10_000,
   query_timeout: 12_000,
 });

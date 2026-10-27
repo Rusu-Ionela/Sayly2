@@ -3,6 +3,7 @@ import {
   type AnyPgColumn,
   boolean,
   check,
+  date,
   doublePrecision,
   index,
   integer,
@@ -15,6 +16,15 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { relations, sql } from "drizzle-orm";
+import {
+  CEFR_LEVELS,
+  DEVICE_PLATFORMS,
+  PROFICIENCY_LEVELS,
+  SUPPORT_TICKET_KINDS,
+  SUPPORT_TICKET_STATUSES,
+  SUPPORT_TOPICS,
+  USER_LANGUAGE_TYPES,
+} from "@sayly/shared";
 
 import { generateSaylyId } from "../shared/utils/saylyId";
 
@@ -30,44 +40,21 @@ export const connectionStatusEnum = pgEnum("ConnectionStatus", [
 /** Lifecycle for member-submitted safety reports. */
 export const reportStatusEnum = pgEnum("ReportStatus", ["PENDING", "IN_REVIEW", "RESOLVED", "DISMISSED"]);
 /** LANG-002P0 role of a language on a user profile. Postgres enum name stays UserLanguageType. */
-export const userLanguageTypeEnum = pgEnum("UserLanguageType", ["SPEAKS", "LEARNING"]);
-export const proficiencyLevelEnum = pgEnum("ProficiencyLevel", [
-  "BEGINNER",
-  "ELEMENTARY",
-  "INTERMEDIATE",
-  "UPPER_INTERMEDIATE",
-  "ADVANCED",
-  "FLUENT",
-  "NATIVE",
-]);
+export const userLanguageTypeEnum = pgEnum("UserLanguageType", USER_LANGUAGE_TYPES);
+export const proficiencyLevelEnum = pgEnum("ProficiencyLevel", PROFICIENCY_LEVELS);
 export const conversationTypeEnum = pgEnum("ConversationType", ["DIRECT", "GROUP"]);
 export const messageTypeEnum = pgEnum("MessageType", ["TEXT", "IMAGE", "VOICE", "VIDEO", "SYSTEM"]);
 export const messageStatusEnum = pgEnum("MessageStatus", ["SENT", "DELIVERED", "READ"]);
 export const groupVisibilityEnum = pgEnum("GroupVisibility", ["PUBLIC", "PRIVATE"]);
-export const supportTicketKindEnum = pgEnum("SupportTicketKind", [
-  "CONTACT",
-  "FEATURE_REQUEST",
-  "BUG_REPORT",
-]);
-export const supportTicketStatusEnum = pgEnum("SupportTicketStatus", [
-  "OPEN",
-  "IN_PROGRESS",
-  "RESOLVED",
-  "CLOSED",
-]);
-export const supportTopicEnum = pgEnum("SupportTopic", [
-  "ACCOUNT",
-  "SECURITY",
-  "LANGUAGE_EXCHANGE",
-  "PRO",
-  "OTHER",
-]);
-export const devicePlatformEnum = pgEnum("DevicePlatform", ["IOS", "ANDROID", "WEB"]);
+export const supportTicketKindEnum = pgEnum("SupportTicketKind", SUPPORT_TICKET_KINDS);
+export const supportTicketStatusEnum = pgEnum("SupportTicketStatus", SUPPORT_TICKET_STATUSES);
+export const supportTopicEnum = pgEnum("SupportTopic", SUPPORT_TOPICS);
+export const devicePlatformEnum = pgEnum("DevicePlatform", DEVICE_PLATFORMS);
 export const groupRoleEnum = pgEnum("GroupRole", ["OWNER", "MODERATOR", "MEMBER"]);
 /** PENDING = join request to a private group awaiting moderator approval. */
 export const groupMemberStatusEnum = pgEnum("GroupMemberStatus", ["ACTIVE", "PENDING"]);
 /** CEFR level stated on a language certificate (self-reported, not verified). */
-export const cefrLevelEnum = pgEnum("CefrLevel", ["A1", "A2", "B1", "B2", "C1", "C2"]);
+export const cefrLevelEnum = pgEnum("CefrLevel", CEFR_LEVELS);
 
 export type UserStatus = (typeof userStatusEnum.enumValues)[number];
 export type UserRole = (typeof userRoleEnum.enumValues)[number];
@@ -105,6 +92,8 @@ export const users = pgTable(
     authVersion: integer("authVersion").notNull().default(0),
     /** Set by billing/admin only — never writable through profile endpoints. */
     isPro: boolean("isPro").notNull().default(false),
+    /** Temporary Pro (e.g. the weekly friends-leaderboard reward); see `hasProAccess`. */
+    proUntil: timestamp("proUntil", { precision: 3, mode: "date" }),
     /** Short public code people share to find this profile ("Sayly ID"). */
     saylyId: text("saylyId")
       .notNull()
@@ -257,6 +246,7 @@ export const userSettings = pgTable("UserSettings", {
   notifyMessages: boolean("notifyMessages").notNull().default(true),
   notifyConnectionRequests: boolean("notifyConnectionRequests").notNull().default(true),
   notifyGroupActivity: boolean("notifyGroupActivity").notNull().default(true),
+  notifyStreakReminders: boolean("notifyStreakReminders").notNull().default(true),
   /** When false, nobody can open this profile from a shared Sayly ID link. */
   showSaylyId: boolean("showSaylyId").notNull().default(true),
   /** When false, certificates are hidden on the public profile. */
@@ -289,6 +279,191 @@ export const pushTokens = pgTable(
       .$onUpdate(() => new Date()),
   },
   (table) => [index("PushToken_userId_idx").on(table.userId)],
+);
+
+/**
+ * Daily activity streak, one row per member. A day counts once the member opens the app or
+ * sends a message; days are calendar days in `timezone` (IANA, reported by the app).
+ */
+export const userStreaks = pgTable(
+  "UserStreak",
+  {
+    userId: text("userId")
+      .primaryKey()
+      .references(() => users.id, { onDelete: "cascade" }),
+    currentStreak: integer("currentStreak").notNull().default(0),
+    longestStreak: integer("longestStreak").notNull().default(0),
+    /** Local calendar day of the last counted activity. */
+    lastActiveDate: date("lastActiveDate", { mode: "string" }),
+    /** Local day the last streak reminder went out (at most one a day). */
+    lastReminderDate: date("lastReminderDate", { mode: "string" }),
+    timezone: text("timezone").notNull().default("UTC"),
+    updatedAt: timestamp("updatedAt", { precision: 3, mode: "date" })
+      .notNull()
+      .$defaultFn(() => new Date())
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    check("UserStreak_counts_check", sql`${table.currentStreak} >= 0 AND ${table.longestStreak} >= ${table.currentStreak}`),
+  ],
+);
+
+/**
+ * Answers to the daily icebreaker. Everyone learning or speaking a language sees the same
+ * prompt for it on a given (UTC) day; one answer per member, language and day.
+ */
+export const icebreakerAnswers = pgTable(
+  "IcebreakerAnswer",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    userId: text("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    languageId: text("languageId")
+      .notNull()
+      .references(() => languages.id),
+    promptDate: date("promptDate", { mode: "string" }).notNull(),
+    promptId: text("promptId").notNull(),
+    body: text("body").notNull(),
+    createdAt: timestamp("createdAt", { precision: 3, mode: "date" }).notNull().$defaultFn(() => new Date()),
+    updatedAt: timestamp("updatedAt", { precision: 3, mode: "date" })
+      .notNull()
+      .$defaultFn(() => new Date())
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    uniqueIndex("IcebreakerAnswer_userId_languageId_promptDate_key").on(
+      table.userId,
+      table.languageId,
+      table.promptDate,
+    ),
+    index("IcebreakerAnswer_feed_idx").on(table.languageId, table.promptDate, table.createdAt, table.id),
+  ],
+);
+
+/**
+ * Voice Sparks: voice notes of up to 15 s that live for 24 h. A row with `replyToId` is a
+ * private voice reply to another spark; only that spark's author hears it.
+ */
+export const voiceSparks = pgTable(
+  "VoiceSpark",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    userId: text("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    languageId: text("languageId")
+      .notNull()
+      .references(() => languages.id),
+    /** Stable `/media/files/<key>` path of an upload the author owns. */
+    audioUrl: text("audioUrl").notNull(),
+    durationMs: integer("durationMs").notNull(),
+    replyToId: text("replyToId").references((): AnyPgColumn => voiceSparks.id, { onDelete: "cascade" }),
+    /** Author of the spark replied to, so "replies to me" needs no join. */
+    replyToUserId: text("replyToUserId").references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("createdAt", { precision: 3, mode: "date" }).notNull().$defaultFn(() => new Date()),
+    expiresAt: timestamp("expiresAt", { precision: 3, mode: "date" }).notNull(),
+  },
+  (table) => [
+    check("VoiceSpark_duration_check", sql`${table.durationMs} > 0 AND ${table.durationMs} <= 15000`),
+    index("VoiceSpark_expiresAt_idx").on(table.expiresAt),
+    index("VoiceSpark_user_createdAt_idx").on(table.userId, table.createdAt),
+    index("VoiceSpark_replyToUser_idx").on(table.replyToUserId, table.createdAt),
+  ],
+);
+
+/**
+ * Instants (stories): a photo, voice note or text that friends and followers see for 24 hours.
+ * PHOTO and VOICE carry `mediaUrl`; TEXT carries `textContent` (a caption on PHOTO).
+ */
+export const stories = pgTable(
+  "Story",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    userId: text("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    mediaType: text("mediaType", { enum: ["PHOTO", "VOICE", "TEXT"] }).notNull(),
+    /** Stable `/media/files/<key>` path of an upload the author owns. */
+    mediaUrl: text("mediaUrl"),
+    textContent: text("textContent"),
+    durationMs: integer("durationMs"),
+    targetLanguage: text("targetLanguage")
+      .notNull()
+      .references(() => languages.id),
+    createdAt: timestamp("createdAt", { precision: 3, mode: "date" }).notNull().$defaultFn(() => new Date()),
+    expiresAt: timestamp("expiresAt", { precision: 3, mode: "date" }).notNull(),
+  },
+  (table) => [
+    check("Story_mediaType_check", sql`${table.mediaType} IN ('PHOTO', 'VOICE', 'TEXT')`),
+    check(
+      "Story_payload_check",
+      sql`(${table.mediaType} = 'TEXT' AND ${table.textContent} IS NOT NULL AND ${table.mediaUrl} IS NULL)
+        OR (${table.mediaType} = 'PHOTO' AND ${table.mediaUrl} IS NOT NULL)
+        OR (${table.mediaType} = 'VOICE' AND ${table.mediaUrl} IS NOT NULL AND ${table.durationMs} > 0)`,
+    ),
+    index("Story_expiresAt_idx").on(table.expiresAt),
+    index("Story_user_expiresAt_idx").on(table.userId, table.expiresAt),
+  ],
+);
+
+/**
+ * 3-minute Flash Quests. Status is SEARCHING until a second member joins (guestId), then
+ * ACTIVE until `endsAt`. ENDED and an expired search are derived from the clock on read.
+ */
+export const flashQuests = pgTable(
+  "FlashQuest",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    languageId: text("languageId")
+      .notNull()
+      .references(() => languages.id),
+    hostId: text("hostId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    guestId: text("guestId").references(() => users.id, { onDelete: "cascade" }),
+    status: text("status").notNull().default("SEARCHING"),
+    promptId: text("promptId").notNull(),
+    challengeId: text("challengeId").notNull(),
+    hostWantsConnect: boolean("hostWantsConnect").notNull().default(false),
+    guestWantsConnect: boolean("guestWantsConnect").notNull().default(false),
+    createdAt: timestamp("createdAt", { precision: 3, mode: "date" }).notNull().$defaultFn(() => new Date()),
+    startedAt: timestamp("startedAt", { precision: 3, mode: "date" }),
+    endsAt: timestamp("endsAt", { precision: 3, mode: "date" }),
+  },
+  (table) => [
+    check("FlashQuest_status_check", sql`${table.status} IN ('SEARCHING', 'ACTIVE', 'CANCELLED')`),
+    check("FlashQuest_no_self", sql`${table.guestId} IS NULL OR ${table.guestId} <> ${table.hostId}`),
+    index("FlashQuest_search_idx").on(table.languageId, table.status, table.createdAt),
+    index("FlashQuest_host_idx").on(table.hostId, table.createdAt),
+    index("FlashQuest_guest_idx").on(table.guestId, table.createdAt),
+  ],
+);
+
+export const flashQuestMessages = pgTable(
+  "FlashQuestMessage",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    questId: text("questId")
+      .notNull()
+      .references(() => flashQuests.id, { onDelete: "cascade" }),
+    senderId: text("senderId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    body: text("body").notNull(),
+    createdAt: timestamp("createdAt", { precision: 3, mode: "date" }).notNull().$defaultFn(() => new Date()),
+  },
+  (table) => [index("FlashQuestMessage_quest_idx").on(table.questId, table.createdAt)],
 );
 
 export const notificationTypeEnum = pgEnum("NotificationType", ["CORRECTION", "REFERENCE"]);
@@ -426,6 +601,8 @@ export const conversationParticipants = pgTable(
     lastMessageAt: timestamp("lastMessageAt", { precision: 3, mode: "date" }),
     /** Set while this user has the chat pinned to the top of their list. */
     pinnedAt: timestamp("pinnedAt", { precision: 3, mode: "date" }),
+    /** This member reads the chat with incoming messages translated automatically. */
+    autoTranslate: boolean("autoTranslate").notNull().default(false),
   },
   (table) => [
     uniqueIndex("ConversationParticipant_conversationId_userId_key").on(
@@ -887,6 +1064,128 @@ export const groupMembers = pgTable(
   ],
 );
 
+/** Group feed post: a thought or question; separate from the group's chat discussion. */
+export const groupPosts = pgTable(
+  "GroupPost",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    groupId: text("groupId")
+      .notNull()
+      .references(() => groups.id, { onDelete: "cascade" }),
+    authorId: text("authorId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    kind: text("kind").notNull().default("THOUGHT"),
+    body: text("body").notNull(),
+    /** Idempotency key from the app, unique per author. */
+    clientId: text("clientId"),
+    createdAt: timestamp("createdAt", { precision: 3, mode: "date" }).notNull().$defaultFn(() => new Date()),
+  },
+  (table) => [
+    check("GroupPost_kind_check", sql`${table.kind} IN ('THOUGHT', 'QUESTION')`),
+    index("GroupPost_feed_idx").on(table.groupId, table.createdAt, table.id),
+    uniqueIndex("GroupPost_author_clientId_key").on(table.authorId, table.clientId),
+  ],
+);
+
+export const groupPostComments = pgTable(
+  "GroupPostComment",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    postId: text("postId")
+      .notNull()
+      .references(() => groupPosts.id, { onDelete: "cascade" }),
+    authorId: text("authorId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    body: text("body").notNull(),
+    clientId: text("clientId"),
+    createdAt: timestamp("createdAt", { precision: 3, mode: "date" }).notNull().$defaultFn(() => new Date()),
+  },
+  (table) => [
+    index("GroupPostComment_post_idx").on(table.postId, table.createdAt, table.id),
+    uniqueIndex("GroupPostComment_author_clientId_key").on(table.authorId, table.clientId),
+  ],
+);
+
+/** One reaction per member and post. */
+export const groupPostReactions = pgTable(
+  "GroupPostReaction",
+  {
+    postId: text("postId")
+      .notNull()
+      .references(() => groupPosts.id, { onDelete: "cascade" }),
+    userId: text("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    kind: text("kind").notNull(),
+    createdAt: timestamp("createdAt", { precision: 3, mode: "date" }).notNull().$defaultFn(() => new Date()),
+  },
+  (table) => [
+    primaryKey({ columns: [table.postId, table.userId] }),
+    check("GroupPostReaction_kind_check", sql`${table.kind} IN ('LIKE', 'LOVE', 'HAHA', 'CLAP')`),
+  ],
+);
+
+/**
+ * Live audio Party Room. LIVE until the host ends it, or nobody is left. Participants are
+ * rows while connected; the socket id ties a row to the one device that joined.
+ */
+export const partyRooms = pgTable(
+  "PartyRoom",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    title: text("title").notNull(),
+    languageId: text("languageId")
+      .notNull()
+      .references(() => languages.id),
+    /** Set for a room inside a group: only its active members may join. */
+    groupId: text("groupId").references(() => groups.id, { onDelete: "cascade" }),
+    hostId: text("hostId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    status: text("status").notNull().default("LIVE"),
+    createdAt: timestamp("createdAt", { precision: 3, mode: "date" }).notNull().$defaultFn(() => new Date()),
+    endedAt: timestamp("endedAt", { precision: 3, mode: "date" }),
+  },
+  (table) => [
+    check("PartyRoom_status_check", sql`${table.status} IN ('LIVE', 'ENDED')`),
+    index("PartyRoom_live_idx").on(table.status, table.createdAt),
+    index("PartyRoom_group_idx").on(table.groupId, table.status),
+    index("PartyRoom_host_idx").on(table.hostId, table.status),
+  ],
+);
+
+export const partyRoomParticipants = pgTable(
+  "PartyRoomParticipant",
+  {
+    roomId: text("roomId")
+      .notNull()
+      .references(() => partyRooms.id, { onDelete: "cascade" }),
+    userId: text("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    role: text("role").notNull().default("LISTENER"),
+    muted: boolean("muted").notNull().default(true),
+    handRaisedAt: timestamp("handRaisedAt", { precision: 3, mode: "date" }),
+    socketId: text("socketId").notNull(),
+    joinedAt: timestamp("joinedAt", { precision: 3, mode: "date" }).notNull().$defaultFn(() => new Date()),
+  },
+  (table) => [
+    primaryKey({ columns: [table.roomId, table.userId] }),
+    check("PartyRoomParticipant_role_check", sql`${table.role} IN ('HOST', 'SPEAKER', 'LISTENER')`),
+    // A member is in one room at a time.
+    uniqueIndex("PartyRoomParticipant_userId_key").on(table.userId),
+    index("PartyRoomParticipant_socket_idx").on(table.socketId),
+  ],
+);
+
 export const usersRelations = relations(users, ({ one, many }) => ({
   profile: one(profiles, {
     fields: [users.id],
@@ -1029,3 +1328,14 @@ export type ProfileView = typeof profileViews.$inferSelect;
 export type ConversationTopic = typeof conversationTopics.$inferSelect;
 export type SupportTicket = typeof supportTickets.$inferSelect;
 export type GroupMember = typeof groupMembers.$inferSelect;
+export type UserStreak = typeof userStreaks.$inferSelect;
+export type IcebreakerAnswer = typeof icebreakerAnswers.$inferSelect;
+export type VoiceSpark = typeof voiceSparks.$inferSelect;
+export type Story = typeof stories.$inferSelect;
+export type FlashQuest = typeof flashQuests.$inferSelect;
+export type FlashQuestMessage = typeof flashQuestMessages.$inferSelect;
+export type GroupPost = typeof groupPosts.$inferSelect;
+export type GroupPostComment = typeof groupPostComments.$inferSelect;
+export type GroupPostReactionRow = typeof groupPostReactions.$inferSelect;
+export type PartyRoom = typeof partyRooms.$inferSelect;
+export type PartyRoomParticipant = typeof partyRoomParticipants.$inferSelect;

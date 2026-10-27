@@ -155,6 +155,55 @@
       "when": 1793049600000,
       "tag": "0021_report_review_workflow",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1793136000000,
+      "tag": "0022_streaks_icebreakers",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1793222400000,
+      "tag": "0023_streak_reminders",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1793308800000,
+      "tag": "0024_conversation_auto_translate",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1793395200000,
+      "tag": "0025_pro_until",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1793481600000,
+      "tag": "0026_live_language_pulse",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1793568000000,
+      "tag": "0027_group_feed_party_rooms",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1793654400000,
+      "tag": "0028_stories",
+      "breakpoints": true
     }
   ]
 }

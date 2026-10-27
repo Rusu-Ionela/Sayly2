@@ -4,7 +4,7 @@
  * it inserts and deletes rows.
  */
 import { createId } from "@paralleldrive/cuid2";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 const url = process.env.TEST_DATABASE_URL;
@@ -117,5 +117,81 @@ describe.skipIf(!url)("real Postgres", () => {
 
     const [reference] = await db.query.references.findMany({ where: (r, { eq }) => eq(r.authorId, a) });
     expect(reference?.rating).toBe(5);
+  });
+
+  it("counts a streak day once, grows on consecutive days and restarts after a gap", async () => {
+    const { countActiveDay, findStreak } = await import("../features/streaks/repository");
+    const a = await makeUser();
+
+    expect(await countActiveDay(a, "2026-10-20", "Europe/Bucharest")).toMatchObject({
+      currentStreak: 1,
+      longestStreak: 1,
+      lastActiveDate: "2026-10-20",
+      timezone: "Europe/Bucharest",
+    });
+    // Same day twice (e.g. two messages at once): only one of the calls moves it.
+    const sameDay = await Promise.all([countActiveDay(a, "2026-10-21", undefined), countActiveDay(a, "2026-10-21", undefined)]);
+    expect(sameDay.filter(Boolean)).toHaveLength(1);
+    expect(await findStreak(a)).toMatchObject({ currentStreak: 2, longestStreak: 2 });
+
+    expect(await countActiveDay(a, "2026-10-20", undefined)).toBeNull();
+    expect(await countActiveDay(a, "2026-10-25", undefined)).toMatchObject({ currentStreak: 1, longestStreak: 2 });
+  });
+
+  it("keeps one icebreaker answer per member and day, hidden across blocks", async () => {
+    const repo = await import("../features/icebreakers/repository");
+    await db
+      .insert(schema.languages)
+      .values({ id: "es", code: "es", name: "Spanish", flagEmoji: "", sortOrder: 2 })
+      .onConflictDoNothing();
+    const [viewer, author, blocked] = [await makeUser(), await makeUser(), await makeUser()];
+    await db
+      .update(schema.users)
+      .set({ onboardingCompleted: true })
+      .where(inArray(schema.users.id, [viewer, author, blocked]));
+    const day = { languageId: "es", promptDate: "2026-10-24" };
+
+    await repo.saveAnswer(author, { ...day, promptId: "ib01", body: "Tostadas" });
+    await repo.saveAnswer(author, { ...day, promptId: "ib01", body: "Tostadas con tomate" });
+    await repo.saveAnswer(blocked, { ...day, promptId: "ib01", body: "Hidden" });
+    await db.insert(schema.blocks).values({ blockerId: viewer, blockedId: blocked });
+
+    expect(await repo.findOwnAnswer(author, day)).toMatchObject({ body: "Tostadas con tomate" });
+    expect(await repo.countVisibleAnswers(viewer, day)).toBe(1);
+    const page = await repo.listVisibleAnswers(viewer, day);
+    expect(page.rows.map((row) => row.userId)).toEqual([author]);
+    expect(await repo.deleteAnswer(author, day)).toBe(true);
+    expect(await repo.countVisibleAnswers(viewer, day)).toBe(0);
+  });
+
+  it("claims streak reminders once a day, in the member's evening, unless opted out", async () => {
+    const { claimDueReminders } = await import("../features/streaks/reminders");
+    const [due, optedOut, noPhone] = [await makeUser(), await makeUser(), await makeUser()];
+    for (const userId of [due, optedOut, noPhone]) {
+      // Alive yesterday (Bucharest), nothing today.
+      await db.insert(schema.userStreaks).values({
+        userId,
+        currentStreak: 4,
+        longestStreak: 4,
+        lastActiveDate: "2026-10-23",
+        timezone: "Europe/Bucharest",
+      });
+    }
+    await db.insert(schema.pushTokens).values([
+      { token: `ExponentPushToken[${due}]`, userId: due, platform: "ios" },
+      { token: `ExponentPushToken[${optedOut}]`, userId: optedOut, platform: "ios" },
+    ]);
+    await db.insert(schema.userSettings).values({ userId: optedOut, notifyStreakReminders: false });
+
+    // 15:00 in Bucharest: too early.
+    expect(await claimDueReminders(new Date("2026-10-24T12:00:00Z"))).toEqual([]);
+    // 20:00 in Bucharest: only the member with a phone and reminders on, and only once.
+    const evening = new Date("2026-10-24T17:00:00Z");
+    const [first, second] = await Promise.all([claimDueReminders(evening), claimDueReminders(evening)]);
+    const claimed = [...first, ...second].filter((row) => [due, optedOut, noPhone].includes(row.userId));
+    expect(claimed).toEqual([{ userId: due, currentStreak: 4 }]);
+    expect(
+      (await claimDueReminders(new Date("2026-10-24T19:30:00Z"))).some((row) => row.userId === due),
+    ).toBe(false);
   });
 });

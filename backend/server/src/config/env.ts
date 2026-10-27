@@ -73,6 +73,12 @@ const envSchema = z
     PASSWORD_RESET_EXPIRES_IN: durationSchema.default("5m"),
     APP_RESET_URL: z.string().min(1).default("sayly://reset-password"),
     OPENAI_API_KEY: z.string().optional().default(""),
+    /** Machine translation for chat: "mymemory" (free, no key), "deepl" or "google" (need a key). */
+    TRANSLATION_PROVIDER: z.enum(["mymemory", "deepl", "google"]).default("mymemory"),
+    DEEPL_API_KEY: z.string().optional().default(""),
+    GOOGLE_TRANSLATE_API_KEY: z.string().optional().default(""),
+    /** Optional contact address for MyMemory: raises its free daily quota. */
+    MYMEMORY_EMAIL: z.string().email().optional(),
     /** Sent to Nominatim, whose usage policy requires an identifying User-Agent. */
     /** Comma-separated STUN servers handed to calling clients. */
     ICE_STUN_URLS: z.string().min(1).default("stun:stun.l.google.com:19302"),
@@ -103,21 +109,35 @@ const envSchema = z
   .superRefine((value, ctx) => {
     if (value.NODE_ENV === "production" && (!value.SMTP_HOST || !value.MAIL_FROM)) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: "custom",
         message: "Production requires SMTP_HOST and MAIL_FROM for password recovery mail",
         path: ["SMTP_HOST"],
       });
     }
     if (value.NODE_ENV === "production" && !value.REDIS_URL) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: "custom",
         message: "Production requires REDIS_URL for shared rate limits, presence, sockets, and revocation",
         path: ["REDIS_URL"],
       });
     }
+    if (value.TRANSLATION_PROVIDER === "deepl" && !value.DEEPL_API_KEY) {
+      ctx.addIssue({
+        code: "custom",
+        message: "TRANSLATION_PROVIDER=deepl requires DEEPL_API_KEY",
+        path: ["DEEPL_API_KEY"],
+      });
+    }
+    if (value.TRANSLATION_PROVIDER === "google" && !value.GOOGLE_TRANSLATE_API_KEY) {
+      ctx.addIssue({
+        code: "custom",
+        message: "TRANSLATION_PROVIDER=google requires GOOGLE_TRANSLATE_API_KEY",
+        path: ["GOOGLE_TRANSLATE_API_KEY"],
+      });
+    }
     if (value.NODE_ENV === "production" && !value.MEDIA_SIGNING_SECRET) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: "custom",
         message: "Production requires MEDIA_SIGNING_SECRET (do not reuse JWT_ACCESS_SECRET)",
         path: ["MEDIA_SIGNING_SECRET"],
       });
@@ -180,6 +200,10 @@ export const env = {
   passwordResetExpiresIn: parsed.PASSWORD_RESET_EXPIRES_IN,
   appResetUrl: parsed.APP_RESET_URL,
   openaiApiKey: parsed.OPENAI_API_KEY,
+  translationProvider: parsed.TRANSLATION_PROVIDER,
+  googleTranslateApiKey: parsed.GOOGLE_TRANSLATE_API_KEY,
+  deeplApiKey: parsed.DEEPL_API_KEY,
+  myMemoryEmail: parsed.MYMEMORY_EMAIL ?? "",
   geocoderUserAgent: parsed.GEOCODER_USER_AGENT,
   iceStunUrls: parsed.ICE_STUN_URLS.split(",").map((url) => url.trim()).filter(Boolean),
   turnUrls: parsed.TURN_URLS.split(",").map((url) => url.trim()).filter(Boolean),
