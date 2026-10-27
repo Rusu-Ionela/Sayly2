@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Alert, Modal, Platform, ScrollView, StyleSheet, Text } from "react-native";
 
 import { ModalSafeFrame } from "@/shared/components/ModalSafeFrame";
-import type { ProficiencyLevel } from "../types";
+import type { ProficiencyLevel, Language, LanguageSetupSection } from "../types";
 import { useColors, type ThemeColors } from "@/shared/theme";
 import { spacing } from "@/shared/theme/spacing";
 import { SafePressable, SafeView } from "@/shared/utils/withoutTextNodes";
@@ -19,7 +19,7 @@ import {
   languageSectionRemoveHint,
   languageSectionTitle,
 } from "../languageSectionLabels";
-import type { Language, LanguageSetupSection } from "../types";
+
 import { languageFlag, languageNativeName } from "../utils";
 import { SelectionMark } from "./SelectionMark";
 

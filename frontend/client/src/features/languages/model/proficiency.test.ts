@@ -1,10 +1,6 @@
-﻿import { formatProficiencyLabel } from "./proficiency";
-import {
-  MAX_LEARNING_LANGUAGES,
-  MAX_NATIVE_LANGUAGES,
-  MAX_SPOKEN_LANGUAGES,
-  normalizeLearningProficiency,
-} from "../constants";
+import { MAX_LEARNING_LANGUAGES, MAX_NATIVE_LANGUAGES, MAX_SPOKEN_LANGUAGES } from "@sayly/shared";
+import { formatProficiencyLabel } from "./proficiency";
+import { normalizeLearningProficiency } from "../constants";
 import type { UserLanguagesGrouped } from "../types";
 import { duplicateLanguageMessage, selectedLanguageIdsFromLists } from "../utils";
 

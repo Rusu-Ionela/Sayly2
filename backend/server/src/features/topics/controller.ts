@@ -1,9 +1,9 @@
 import type { Request, Response } from "express";
+import { createTopicSchema, updateTopicSchema } from "@sayly/shared";
 
 import { requireUserId } from "../../shared/middleware/requireUserId";
 import { requireParam } from "../../shared/utils/requireParam";
 
-import { createTopicSchema, updateTopicSchema } from "./schema";
 import * as topicsService from "./service";
 
 /** GET /topics — your conversation topics. */

@@ -1,6 +1,6 @@
+import { type CreateTopicInput, MAX_CONVERSATION_TOPICS } from "@sayly/shared";
 import * as topicsRepository from "./repository";
-import { MAX_CONVERSATION_TOPICS } from "./schema";
-import type { ConversationTopicsDto, CreateTopicInput } from "./types";
+import type { ConversationTopicsDto } from "./types";
 
 /** Every write returns the full list so the client replaces one cache entry. */
 export async function listTopics(userId: string): Promise<ConversationTopicsDto> {

@@ -1,19 +1,19 @@
 import { useMemo, useRef, useState } from "react";
 import { StyleSheet, Text } from "react-native";
 
-import type { ProficiencyLevel, UserLanguageSelection } from "../types";
+import type {
+  ProficiencyLevel,
+  UserLanguageSelection,
+  Language,
+  LanguageSetupSection,
+} from "../types";
 import { useColors } from "@/shared/theme";
 import { spacing } from "@/shared/theme/spacing";
 import { SafePressable, SafeView } from "@/shared/utils/withoutTextNodes";
+import { MAX_LEARNING_LANGUAGES, MAX_NATIVE_LANGUAGES, MAX_SPOKEN_LANGUAGES } from "@sayly/shared";
 
-import {
-  learningProficiencyLabel,
-  MAX_LEARNING_LANGUAGES,
-  MAX_NATIVE_LANGUAGES,
-  MAX_SPOKEN_LANGUAGES,
-} from "../constants";
+import { learningProficiencyLabel } from "../constants";
 import { languageSectionTitle } from "../languageSectionLabels";
-import type { Language, LanguageSetupSection } from "../types";
 import { languageFlag, languageNativeName, selectedLanguageIdsFromLists } from "../utils";
 import { LanguageCatalogModal } from "./LanguageCatalogModal";
 import { LanguageSectionEditor } from "./LanguageSectionEditor";

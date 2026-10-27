@@ -1,8 +1,9 @@
-import { normalizeTopicTitle, topicTitleError } from "./topicRules";
+import { sanitizeSingleLine } from "@sayly/shared";
+import { topicTitleError } from "./topicRules";
 
 describe("topic title rules", () => {
   it("normalises whitespace like the server", () => {
-    expect(normalizeTopicTitle("  Street    food  ")).toBe("Street food");
+    expect(sanitizeSingleLine("  Street    food  ")).toBe("Street food");
   });
 
   it("checks length and duplicates (case-insensitive)", () => {

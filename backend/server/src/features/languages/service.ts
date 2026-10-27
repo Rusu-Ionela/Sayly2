@@ -2,7 +2,7 @@ import { AppError } from "../../shared/errors/AppError";
 
 import { groupUserLanguages } from "./dto";
 import * as languagesRepository from "./repository";
-import type { SyncUserLanguagesInput, UserLanguagesGroupedDto } from "./types";
+import type { UserLanguagesGroupedDto } from "./types";
 
 export function listLanguages() {
   return languagesRepository.listLanguages();
@@ -31,18 +31,4 @@ export async function assertLanguagesExist(languageIds: string[]): Promise<void>
 export async function getMyLanguages(userId: string): Promise<UserLanguagesGroupedDto> {
   const rows = await languagesRepository.findUserLanguages(userId);
   return groupUserLanguages(rows);
-}
-
-export async function syncMyLanguages(
-  userId: string,
-  input: SyncUserLanguagesInput,
-): Promise<UserLanguagesGroupedDto> {
-  const languageIds = [
-    ...input.spokenLanguages.map((item) => item.languageId),
-    ...input.learningLanguages.map((item) => item.languageId),
-  ];
-
-  await assertLanguagesExist(languageIds);
-  await languagesRepository.syncUserLanguages(userId, input);
-  return getMyLanguages(userId);
 }

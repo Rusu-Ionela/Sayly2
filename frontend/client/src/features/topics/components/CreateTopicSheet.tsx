@@ -17,13 +17,9 @@ import { KeyboardSafeView } from "@/shared/components/KeyboardSafeView";
 import { useColors } from "@/shared/theme";
 import { radius } from "@/shared/theme/radius";
 import { spacing } from "@/shared/theme/spacing";
+import { sanitizeSingleLine, TOPIC_TITLE_MAX } from "@sayly/shared";
 
-import {
-  normalizeTopicTitle,
-  TOPIC_IDEAS,
-  TOPIC_TITLE_MAX,
-  topicTitleError,
-} from "../model/topicRules";
+import { TOPIC_IDEAS, topicTitleError } from "../model/topicRules";
 
 type CreateTopicSheetProps = {
   visible: boolean;
@@ -54,7 +50,7 @@ export function CreateTopicSheet({
 
   const error = topicTitleError(title, existingTitles);
   const shownError = (touched ? error : null) ?? serverError;
-  const length = normalizeTopicTitle(title).length;
+  const length = sanitizeSingleLine(title).length;
 
   const close = () => {
     setTitle("");
@@ -66,7 +62,7 @@ export function CreateTopicSheet({
   const submit = () => {
     setTouched(true);
     if (error || saving) return;
-    onSubmit({ title: normalizeTopicTitle(title), isMain: isFirst || isMain });
+    onSubmit({ title: sanitizeSingleLine(title), isMain: isFirst || isMain });
   };
 
   return (

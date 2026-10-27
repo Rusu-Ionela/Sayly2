@@ -1,10 +1,11 @@
 import { and, desc, eq, ne, sql } from "drizzle-orm";
+import type { CreateTopicInput } from "@sayly/shared";
 
 import { db, type DbTransaction } from "../../db/client";
 import { conversationTopics, users, type ConversationTopic } from "../../db/schema";
 import { AppError } from "../../shared/errors/AppError";
 
-import type { ConversationTopicDto, CreateTopicInput } from "./types";
+import type { ConversationTopicDto } from "./types";
 
 export function toTopicDto(row: ConversationTopic): ConversationTopicDto {
   return {

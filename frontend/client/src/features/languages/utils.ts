@@ -1,8 +1,12 @@
 import type { CurrentUserProfile } from "@/features/profile/types";
-import type { ProficiencyLevel, UserLanguageDto } from "./types";
-
-import { MAX_LEARNING_LANGUAGES, MAX_SPOKEN_LANGUAGES, MIN_LANGUAGES_PER_ROLE } from "./constants";
+import {
+  MAX_LEARNING_LANGUAGES,
+  MAX_SPOKEN_LANGUAGES,
+  MIN_LANGUAGES_PER_ROLE,
+} from "@sayly/shared";
 import type {
+  ProficiencyLevel,
+  UserLanguageDto,
   Language,
   LanguageType,
   SyncUserLanguagesPayload,
@@ -42,8 +46,8 @@ function selectedLanguageIds(grouped: UserLanguagesGrouped): Set<string> {
 }
 
 export function selectedLanguageIdsFromLists(
-  spoken: Array<{ languageId: string }>,
-  learning: Array<{ languageId: string }>,
+  spoken: { languageId: string }[],
+  learning: { languageId: string }[],
 ): Set<string> {
   return new Set([
     ...spoken.map((item) => item.languageId),

@@ -202,7 +202,7 @@ export function LanguageCatalogModal({
                       style={[styles.selectedDivider, { backgroundColor: colors.border }]}
                     />
                   </SafeView>
-                ) : null
+                ) : undefined
               }
               renderItem={({ item }) => (
                 <LanguagePickerRow

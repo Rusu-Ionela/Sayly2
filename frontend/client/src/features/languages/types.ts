@@ -1,11 +1,6 @@
-export type ProficiencyLevel =
-  | "NATIVE"
-  | "FLUENT"
-  | "ADVANCED"
-  | "UPPER_INTERMEDIATE"
-  | "INTERMEDIATE"
-  | "ELEMENTARY"
-  | "BEGINNER";
+import type { ProficiencyLevel } from "@sayly/shared";
+
+export type { ProficiencyLevel };
 
 export type UserLanguageSelection = {
   languageId: string;

@@ -1,9 +1,6 @@
 export { languagesRouter } from "./routes";
 export { LANGUAGE_CATALOG, normalizeLanguageCode } from "./catalog";
 export {
-  MAX_LEARNING_LANGUAGES,
-  MAX_NATIVE_LANGUAGES,
-  MAX_SPOKEN_LANGUAGES,
   addLanguageSelectionIssues,
   languageSelectionSchema,
   learningLanguagesFieldSchema,

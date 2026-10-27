@@ -1,11 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import request from "supertest";
+import { MAX_LEARNING_LANGUAGES } from "@sayly/shared";
 
 import { AppError } from "../../shared/errors/AppError";
-import {
-  MAX_LEARNING_LANGUAGES,
-  syncUserLanguagesSchema,
-} from "./schema";
+import { syncUserLanguagesSchema } from "./schema";
 import { LANGUAGE_CATALOG } from "./catalog";
 import { groupUserLanguages } from "./dto";
 
@@ -14,7 +12,6 @@ vi.mock("../../shared/middleware/authenticate", () => import("../../test/authMoc
 vi.mock("./service", () => ({
   listLanguages: vi.fn(),
   getMyLanguages: vi.fn(),
-  syncMyLanguages: vi.fn(),
   assertLanguagesExist: vi.fn(),
 }));
 

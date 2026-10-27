@@ -38,10 +38,11 @@ export function LanguagePreferencesScreen() {
   spokenRef.current = spokenLanguages;
   learningRef.current = learningLanguages;
 
+  const { resetError } = manager;
   const dismissSnack = useCallback(() => {
     setSnack(null);
-    manager.resetError();
-  }, [manager.resetError]);
+    resetError();
+  }, [resetError]);
 
   useEffect(() => {
     if (manager.errorMessage) {
@@ -161,7 +162,7 @@ export function LanguagePreferencesScreen() {
 }
 
 function mapToItems(
-  selections: Array<{ languageId: string; proficiency: UserLanguageItem["proficiency"] }>,
+  selections: { languageId: string; proficiency: UserLanguageItem["proficiency"] }[],
   existing: UserLanguageItem[],
   type: UserLanguageItem["type"],
 ): UserLanguageItem[] {

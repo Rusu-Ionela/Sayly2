@@ -12,8 +12,3 @@ export type ConversationTopicsDto = {
   /** How many topics a member may have. */
   max: number;
 };
-
-export type CreateTopicInput = {
-  title: string;
-  isMain?: boolean;
-};

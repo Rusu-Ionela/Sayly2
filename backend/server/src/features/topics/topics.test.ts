@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import request from "supertest";
+import { createTopicSchema, TOPIC_TITLE_MAX } from "@sayly/shared";
 
 vi.mock("../../shared/middleware/authenticate", () => import("../../test/authMock"));
 vi.mock("./service", () => {
@@ -14,7 +15,6 @@ vi.mock("./service", () => {
 
 import { createApp } from "../../lib/app";
 import { TEST_VIEWER_ID } from "../../test/authMock";
-import { createTopicSchema, TOPIC_TITLE_MAX } from "./schema";
 import * as topicsService from "./service";
 
 const service = vi.mocked(topicsService);

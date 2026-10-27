@@ -12,6 +12,7 @@ import { WarmErrorState } from "@/shared/components/WarmErrorState";
 import { useColors } from "@/shared/theme";
 import { radius } from "@/shared/theme/radius";
 import { spacing } from "@/shared/theme/spacing";
+import { confirmAction } from "@/shared/utils/confirmAction";
 
 import type { ConversationTopic } from "../api/topicsApi";
 import { CreateTopicSheet } from "../components/CreateTopicSheet";
@@ -67,23 +68,19 @@ export function TopicsScreen() {
 
   const confirmDelete = (topic: ConversationTopic) => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => undefined);
-    Alert.alert(
-      "Delete topic",
-      topic.isMain && others.length > 0
-        ? `Delete "${topic.title}"? Your newest topic becomes the main one.`
-        : `Delete "${topic.title}"?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: () =>
-            remove.mutate(topic.id, {
-              onError: (error) => Alert.alert("Could not delete", topicErrorMessage(error)),
-            }),
-        },
-      ],
-    );
+    confirmAction({
+      title: "Delete topic",
+      message:
+        topic.isMain && others.length > 0
+          ? `Delete "${topic.title}"? Your newest topic becomes the main one.`
+          : `Delete "${topic.title}"?`,
+      confirmLabel: "Delete",
+      cancelLabel: "Cancel",
+      onConfirm: () =>
+        remove.mutate(topic.id, {
+          onError: (error) => Alert.alert("Could not delete", topicErrorMessage(error)),
+        }),
+    });
   };
 
   const openCreate = () => {

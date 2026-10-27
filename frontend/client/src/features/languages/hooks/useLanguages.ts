@@ -4,10 +4,16 @@ import { useRef } from "react";
 import { isApiError } from "@/lib/api/errors";
 import type { CurrentUserProfile } from "@/features/profile/types";
 import { queryKeys } from "@/lib/queryKeys";
-import type { ProficiencyLevel } from "../types";
+import type {
+  ProficiencyLevel,
+  Language,
+  LanguageType,
+  UserLanguageItem,
+  UserLanguagesGrouped,
+} from "../types";
 
 import { getLanguages, getMyLanguages, putMyLanguages } from "../api/languagesApi";
-import type { Language, LanguageType, UserLanguageItem, UserLanguagesGrouped } from "../types";
+
 import {
   applyAddLanguage,
   applyProficiency,
@@ -185,15 +191,15 @@ export function useManageUserLanguages() {
 
 function groupedFromPayload(
   payload: {
-    spokenLanguages: Array<{ languageId: string; proficiency: ProficiencyLevel }>;
-    learningLanguages: Array<{ languageId: string; proficiency: ProficiencyLevel }>;
+    spokenLanguages: { languageId: string; proficiency: ProficiencyLevel }[];
+    learningLanguages: { languageId: string; proficiency: ProficiencyLevel }[];
   },
   catalog: Language[],
   previous: UserLanguagesGrouped | undefined,
 ): UserLanguagesGrouped {
   const mapItems = (
     type: LanguageType,
-    rows: Array<{ languageId: string; proficiency: ProficiencyLevel }>,
+    rows: { languageId: string; proficiency: ProficiencyLevel }[],
     previousRows: UserLanguageItem[] | undefined,
   ) =>
     rows.map((row) => {

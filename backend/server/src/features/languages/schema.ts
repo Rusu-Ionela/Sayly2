@@ -1,30 +1,21 @@
 import { z } from "zod";
+import {
+  MAX_LEARNING_LANGUAGES,
+  MAX_NATIVE_LANGUAGES,
+  MAX_SPOKEN_LANGUAGES,
+  PROFICIENCY_LEVELS,
+  USER_LANGUAGE_TYPES,
+} from "@sayly/shared";
 
 import type { ProficiencyLevel } from "../../db/schema";
-
-export const MAX_SPOKEN_LANGUAGES = 10;
-export const MAX_LEARNING_LANGUAGES = 5;
-export const MAX_NATIVE_LANGUAGES = 1;
-
-export const PROFICIENCY_VALUES = [
-  "BEGINNER",
-  "ELEMENTARY",
-  "INTERMEDIATE",
-  "UPPER_INTERMEDIATE",
-  "ADVANCED",
-  "FLUENT",
-  "NATIVE",
-] as const;
-
-export const LANGUAGE_TYPE_VALUES = ["SPEAKS", "LEARNING"] as const;
 
 export const proficiencySchema = z
   .string()
   .min(1)
   .transform((value) => value.trim().toUpperCase().replace(/[\s-]+/g, "_"))
-  .pipe(z.enum(PROFICIENCY_VALUES));
+  .pipe(z.enum(PROFICIENCY_LEVELS));
 
-export const languageTypeSchema = z.enum(LANGUAGE_TYPE_VALUES);
+export const languageTypeSchema = z.enum(USER_LANGUAGE_TYPES);
 
 export const languageSelectionSchema = z.object({
   languageId: z.string().trim().min(1).max(16),
@@ -32,7 +23,7 @@ export const languageSelectionSchema = z.object({
 });
 
 export function mapLanguageSelections(
-  items: Array<{ languageId: string; proficiency: (typeof PROFICIENCY_VALUES)[number] }>,
+  items: Array<{ languageId: string; proficiency: (typeof PROFICIENCY_LEVELS)[number] }>,
 ): Array<{ languageId: string; proficiency: ProficiencyLevel }> {
   return items.map((item) => ({
     languageId: item.languageId,
@@ -51,7 +42,7 @@ export function addLanguageSelectionIssues(
 ): void {
   if (!uniqueIds(spokenLanguages)) {
     ctx.addIssue({
-      code: z.ZodIssueCode.custom,
+      code: "custom",
       message: "spokenLanguages must not contain duplicate languageId values",
       path: ["spokenLanguages"],
     });
@@ -59,7 +50,7 @@ export function addLanguageSelectionIssues(
 
   if (!uniqueIds(learningLanguages)) {
     ctx.addIssue({
-      code: z.ZodIssueCode.custom,
+      code: "custom",
       message: "learningLanguages must not contain duplicate languageId values",
       path: ["learningLanguages"],
     });
@@ -77,7 +68,7 @@ export function addLanguageSelectionIssues(
 
     if (spokenProficiency === item.proficiency) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: "custom",
         message: "A language cannot be both SPEAKS and LEARNING at the same proficiency",
         path: ["learningLanguages"],
       });
@@ -85,7 +76,7 @@ export function addLanguageSelectionIssues(
     }
 
     ctx.addIssue({
-      code: z.ZodIssueCode.custom,
+      code: "custom",
       message: "A language cannot be both spoken and learning",
       path: ["learningLanguages"],
     });
@@ -94,7 +85,7 @@ export function addLanguageSelectionIssues(
   const nativeCount = spokenLanguages.filter((item) => item.proficiency === "NATIVE").length;
   if (nativeCount > MAX_NATIVE_LANGUAGES) {
     ctx.addIssue({
-      code: z.ZodIssueCode.custom,
+      code: "custom",
       message: `At most ${MAX_NATIVE_LANGUAGES} native language allowed`,
       path: ["spokenLanguages"],
     });

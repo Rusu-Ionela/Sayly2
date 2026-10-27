@@ -1,9 +1,7 @@
+import { sanitizeSingleLine, TOPIC_TITLE_MIN, TOPIC_TITLE_MAX } from "@sayly/shared";
+
 import { isApiError } from "@/lib/api/errors";
 import { profileErrorMessage } from "@/features/profile/model/profileErrors";
-
-/** Mirrors backend `topics/schema.ts`. */
-const TOPIC_TITLE_MIN = 3;
-export const TOPIC_TITLE_MAX = 80;
 
 /** Tap-to-fill starters in the create sheet. */
 export const TOPIC_IDEAS = [
@@ -15,13 +13,9 @@ export const TOPIC_IDEAS = [
   "Weekend plans",
 ] as const;
 
-/** Same whitespace rules as the server, so the counter and duplicate check agree. */
-export function normalizeTopicTitle(value: string) {
-  return value.replace(/\s+/g, " ").trim();
-}
-
 export function topicTitleError(value: string, existing: readonly string[]): string | null {
-  const title = normalizeTopicTitle(value);
+  // Same cleanup as the server, so the counter and duplicate check agree.
+  const title = sanitizeSingleLine(value);
   if (title.length < TOPIC_TITLE_MIN) return `Use at least ${TOPIC_TITLE_MIN} characters.`;
   if (title.length > TOPIC_TITLE_MAX) return `Keep it under ${TOPIC_TITLE_MAX} characters.`;
   const lower = title.toLocaleLowerCase();
