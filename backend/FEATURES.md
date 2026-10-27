@@ -408,6 +408,37 @@ Product “matching” = **discovery scoring + connections**, not this router.
 
 ---
 
+## 11. Group feed (`features/groupFeed`)
+
+Posts (thought or question), comments and one reaction per member (`LIKE`, `LOVE`, `HAHA`, `CLAP`) inside a group. Members only, same rules as the group discussion (`groups/policy`). Author or owner/moderator can delete. Contract (schemas, DTOs, event names) lives in `packages/shared/src/groupFeed.ts`. Tables: `GroupPost`, `GroupPostComment`, `GroupPostReaction` (migration `0027`).
+
+Mounted at `/groups/:id/posts` (router with `mergeParams`):
+
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/` | feed, newest first, `?before=<postId>&limit=` |
+| POST | `/` | `{ body, kind?, clientId? }`; `clientId` makes retries idempotent |
+| GET / DELETE | `/:postId` | |
+| PUT / DELETE | `/:postId/reaction` | `{ kind }` |
+| GET / POST | `/:postId/comments` | thread oldest first, `?before=` loads older |
+| DELETE | `/:postId/comments/:commentId` | |
+
+Socket (server → every active member): `group_post_new`, `group_post_updated` (counts), `group_post_deleted`, `group_post_comment_new`, `group_post_comment_deleted`.
+
+## 12. Party Rooms (`features/partyRooms`)
+
+Live audio rooms. One `HOST`, up to 6 speakers (host included), up to 40 participants. Listeners raise a hand; the host invites them on stage or declines the request, moves speakers back, mutes or removes people, or ends the room. A leaving host hands over to the longest-standing speaker, or the room ends. Optional `groupId` makes the room members-only. Joining is refused during a 1:1 call, and calls are refused while in a room.
+
+Audio is peer to peer over WebRTC (mesh: each speaker sends to every participant); the server keeps state in Postgres (`PartyRoom`, `PartyRoomParticipant`, migration `0027`) and relays signalling to the participant's socket. A dropped socket keeps its seat for 15 s (reconnect resumes it); a sweeper frees stale seats and ends empty rooms.
+
+REST at `/party-rooms`: `GET /` (lobby: open rooms + the viewer's group rooms, `?groupId=&languageId=`), `POST /` (`{ title, languageId, groupId? }`), `GET /:id`.
+
+Socket events (`PARTY_EVENTS` in `packages/shared/src/partyRooms.ts`), all with ack:
+- client → server: `party_create` (same rules as `POST /party-rooms`, ack `{ id }`), `party_join`, `party_leave`, `party_raise_hand`, `party_promote`, `party_decline_hand`, `party_demote`, `party_remove`, `party_set_muted`, `party_mute_user`, `party_end`, `party_react`, `party_signal`
+- server → client: `party_state` (full room after each change), `party_signal_relay`, `party_reaction`, `party_ended`, `party_removed`, `party_force_mute`, `party_hand_declined`
+
+Reactions (`HEART`, `CLAP`, `FIRE`) are not stored; 8 per 10 s per member.
+
 # Endpoint index (all HTTP)
 
 | Area | Endpoints | Notes |

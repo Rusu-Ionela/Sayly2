@@ -20,7 +20,11 @@ jobs:
         with:
           node-version: 24
           cache: npm
-          cache-dependency-path: backend/server/package-lock.json
+          cache-dependency-path: |
+            backend/server/package-lock.json
+            packages/shared/package-lock.json
+      # @sayly/shared is a local package: install it first so the app's file: link resolves.
+      - run: npm ci --prefix ../../packages/shared
       - run: npm ci
       - run: npm run typecheck:all
       - run: npm run build
@@ -49,11 +53,17 @@ jobs:
         with:
           node-version: 24
           cache: npm
-          cache-dependency-path: backend/server/package-lock.json
+          cache-dependency-path: |
+            backend/server/package-lock.json
+            packages/shared/package-lock.json
+      # @sayly/shared is a local package: install it first so the app's file: link resolves.
+      - run: npm ci --prefix ../../packages/shared
       - run: npm ci
       # Apply the same ordered migration history used by production. This catches
       # drift between schema.ts and the journal instead of masking it with push.
       - run: npm run db:migrate
+      # The schema imports @sayly/shared, which runs from its built dist.
+      - run: npm run build:shared
       - run: npx vitest run src/db/integration.test.ts
 
   frontend:
@@ -67,7 +77,11 @@ jobs:
         with:
           node-version: 24
           cache: npm
-          cache-dependency-path: frontend/client/package-lock.json
+          cache-dependency-path: |
+            frontend/client/package-lock.json
+            packages/shared/package-lock.json
+      # @sayly/shared is a local package: install it first so the app's file: link resolves.
+      - run: npm ci --prefix ../../packages/shared
       - run: npm ci
       - run: npm run typecheck
       - run: npm run lint
