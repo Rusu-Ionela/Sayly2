@@ -28,7 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: "Checkout repository"
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: "Dependency Review"
         uses: actions/dependency-review-action@v4
         # Advisory only: on this private repository the action needs GitHub Advanced
