@@ -5,7 +5,7 @@ import { bearerAuth, commonErrorResponses } from "../components/responses";
 import { MemberSummarySchema } from "../schemas/profileDashboard.schemas";
 
 const userIdParams = z.object({
-  userId: z.string().openapi({ example: "clxyz...", description: "User to follow or unfollow" }),
+  userId: z.string().meta({ example: "clxyz...", description: "User to follow or unfollow" }),
 });
 const followState = z.object({ following: z.boolean() });
 

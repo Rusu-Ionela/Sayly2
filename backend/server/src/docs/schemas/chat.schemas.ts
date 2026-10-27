@@ -1,27 +1,24 @@
 import { z } from "zod";
-import { extendZodWithOpenApi } from "@asteasolutions/zod-to-openapi";
 
-extendZodWithOpenApi(z);
-
-export const MessageTypeSchema = z.enum(["TEXT", "IMAGE", "VOICE", "VIDEO"]).openapi({ example: "TEXT" });
-export const MessageStatusSchema = z.enum(["SENT", "DELIVERED", "READ"]).openapi({ example: "SENT" });
-export const OnlineStatusSchema = z.enum(["ONLINE", "OFFLINE", "UNKNOWN"]).openapi({ example: "OFFLINE" });
+export const MessageTypeSchema = z.enum(["TEXT", "IMAGE", "VOICE", "VIDEO"]).meta({ example: "TEXT" });
+export const MessageStatusSchema = z.enum(["SENT", "DELIVERED", "READ"]).meta({ example: "SENT" });
+export const OnlineStatusSchema = z.enum(["ONLINE", "OFFLINE", "UNKNOWN"]).meta({ example: "OFFLINE" });
 
 export const OpenDirectConversationRequestSchema = z
-  .object({ userId: z.string().openapi({ example: "clxyz...", description: "User to chat with" }) })
-  .openapi("OpenDirectConversationRequest");
+  .object({ userId: z.string().meta({ example: "clxyz...", description: "User to chat with" }) })
+  .meta({ id: "OpenDirectConversationRequest" });
 
 export const OpenDirectConversationResponseSchema = z
-  .object({ conversationId: z.string().openapi({ example: "clconv..." }) })
-  .openapi("OpenDirectConversationResponse");
+  .object({ conversationId: z.string().meta({ example: "clconv..." }) })
+  .meta({ id: "OpenDirectConversationResponse" });
 
 export const ChatMessageSchema = z
   .object({
-    id: z.string().openapi({ example: "clmsg..." }),
-    conversationId: z.string().openapi({ example: "clconv..." }),
-    senderId: z.string().openapi({ example: "cluser..." }),
+    id: z.string().meta({ example: "clmsg..." }),
+    conversationId: z.string().meta({ example: "clconv..." }),
+    senderId: z.string().meta({ example: "cluser..." }),
     type: MessageTypeSchema,
-    content: z.string().openapi({ example: "Hi! Want to practice today?" }),
+    content: z.string().meta({ example: "Hi! Want to practice today?" }),
     status: MessageStatusSchema,
     durationMs: z.number().int().nullable().optional(),
     mimeType: z.string().nullable().optional(),
@@ -30,26 +27,26 @@ export const ChatMessageSchema = z
     translatedContent: z.string().nullable().optional(),
     translatedLang: z.string().nullable().optional(),
     caption: z.string().nullable().optional(),
-    createdAt: z.string().openapi({ example: "2026-09-07T10:00:00.000Z" }),
-    updatedAt: z.string().openapi({ example: "2026-09-07T10:00:00.000Z" }),
+    createdAt: z.string().meta({ example: "2026-09-07T10:00:00.000Z" }),
+    updatedAt: z.string().meta({ example: "2026-09-07T10:00:00.000Z" }),
   })
-  .openapi("ChatMessage");
+  .meta({ id: "ChatMessage" });
 
 export const ChatPartnerSchema = z
   .object({
     id: z.string(),
-    displayName: z.string().openapi({ example: "Maria" }),
+    displayName: z.string().meta({ example: "Maria" }),
     avatarUrl: z.string().nullable(),
     photoUrl: z.string().optional(),
-    country: z.string().openapi({ example: "RO" }),
+    country: z.string().meta({ example: "RO" }),
     onlineStatus: OnlineStatusSchema,
     lastSeen: z.string().nullable(),
   })
-  .openapi("ChatPartner");
+  .meta({ id: "ChatPartner" });
 
 export const ConversationListItemSchema = z
   .object({
-    id: z.string().openapi({ example: "clconv..." }),
+    id: z.string().meta({ example: "clconv..." }),
     type: z.literal("DIRECT"),
     otherUser: ChatPartnerSchema,
     lastMessage: ChatMessageSchema.nullable(),
@@ -57,7 +54,7 @@ export const ConversationListItemSchema = z
     lastMessageAt: z.string().nullable(),
     updatedAt: z.string(),
   })
-  .openapi("ConversationListItem");
+  .meta({ id: "ConversationListItem" });
 
 export const ConversationsPageSchema = z
   .object({
@@ -66,7 +63,7 @@ export const ConversationsPageSchema = z
     hasMore: z.boolean(),
     limit: z.number().int(),
   })
-  .openapi("ConversationsPage");
+  .meta({ id: "ConversationsPage" });
 
 export const MessagesPageSchema = z
   .object({
@@ -77,31 +74,31 @@ export const MessagesPageSchema = z
     page: z.number().int().optional(),
     total: z.number().int().optional(),
   })
-  .openapi("MessagesPage");
+  .meta({ id: "MessagesPage" });
 
 export const SendMessageRequestSchema = z
   .object({
-    content: z.string().min(1).max(4000).openapi({ example: "Salut!" }),
+    content: z.string().min(1).max(4000).meta({ example: "Salut!" }),
     type: MessageTypeSchema.optional(),
     durationMs: z.number().int().optional(),
     mimeType: z.string().optional(),
     thumbnailUrl: z.string().optional(),
     caption: z.string().max(1000).optional(),
   })
-  .openapi("SendMessageRequest");
+  .meta({ id: "SendMessageRequest" });
 
 export const TranslateMessageRequestSchema = z
   .object({
-    targetLang: z.string().min(2).max(8).optional().openapi({ example: "ro" }),
+    targetLang: z.string().min(2).max(8).optional().meta({ example: "ro" }),
   })
-  .openapi("TranslateMessageRequest");
+  .meta({ id: "TranslateMessageRequest" });
 
 export const ConversationMessageParamSchema = z
   .object({
-    id: z.string().min(1).openapi({ example: "clconv..." }),
-    messageId: z.string().min(1).openapi({ example: "clmsg..." }),
+    id: z.string().min(1).meta({ example: "clconv..." }),
+    messageId: z.string().min(1).meta({ example: "clmsg..." }),
   })
-  .openapi("ConversationMessageParam");
+  .meta({ id: "ConversationMessageParam" });
 
 export const MediaUploadResultSchema = z
   .object({
@@ -110,13 +107,13 @@ export const MediaUploadResultSchema = z
     kind: z.enum(["image", "audio", "video"]),
     size: z.number().int(),
   })
-  .openapi("MediaUploadResult");
+  .meta({ id: "MediaUploadResult" });
 
 export const MediaUploadRequestSchema = z
   .object({
-    file: z.string().openapi({ format: "binary" }),
+    file: z.string().meta({ format: "binary" }),
   })
-  .openapi("MediaUploadRequest");
+  .meta({ id: "MediaUploadRequest" });
 
 export const MarkReadResponseSchema = z
   .object({
@@ -124,25 +121,25 @@ export const MarkReadResponseSchema = z
     messages: z.array(ChatMessageSchema),
     readCount: z.number().int(),
   })
-  .openapi("MarkReadResponse");
+  .meta({ id: "MarkReadResponse" });
 
 export const ConversationIdParamSchema = z
   .object({
-    id: z.string().min(1).openapi({ example: "clconv..." }),
+    id: z.string().min(1).meta({ example: "clconv..." }),
   })
-  .openapi("ConversationIdParam");
+  .meta({ id: "ConversationIdParam" });
 
 export const ListConversationsQuerySchema = z
   .object({
     cursor: z.string().optional(),
     limit: z.coerce.number().int().min(1).max(50).optional(),
   })
-  .openapi("ListConversationsQuery");
+  .meta({ id: "ListConversationsQuery" });
 
 export const ListMessagesQuerySchema = z
   .object({
-    before: z.string().optional().openapi({ description: "Message id cursor; returns older messages." }),
+    before: z.string().optional().meta({ description: "Message id cursor; returns older messages." }),
     page: z.coerce.number().int().min(1).optional(),
     limit: z.coerce.number().int().min(1).max(100).optional(),
   })
-  .openapi("ListMessagesQuery");
+  .meta({ id: "ListMessagesQuery" });

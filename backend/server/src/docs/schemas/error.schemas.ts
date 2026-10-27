@@ -1,7 +1,4 @@
 import { z } from "zod";
-import { extendZodWithOpenApi } from "@asteasolutions/zod-to-openapi";
-
-extendZodWithOpenApi(z);
 
 export const ErrorResponseSchema = z
   .object({
@@ -9,14 +6,14 @@ export const ErrorResponseSchema = z
     error: z.object({
       code: z.string(),
       message: z.string(),
-      fields: z.record(z.string()).optional(),
+      fields: z.record(z.string(), z.string()).optional(),
     }),
   })
-  .openapi("ErrorResponse");
+  .meta({ id: "ErrorResponse" });
 
-export const ValidationErrorSchema = ErrorResponseSchema.openapi("ValidationError");
-export const UnauthorizedErrorSchema = ErrorResponseSchema.openapi("UnauthorizedError");
-export const ForbiddenErrorSchema = ErrorResponseSchema.openapi("ForbiddenError");
-export const NotFoundErrorSchema = ErrorResponseSchema.openapi("NotFoundError");
-export const RateLimitErrorSchema = ErrorResponseSchema.openapi("RateLimitError");
-export const ConflictErrorSchema = ErrorResponseSchema.openapi("ConflictError");
+export const ValidationErrorSchema = ErrorResponseSchema.meta({ id: "ValidationError" });
+export const UnauthorizedErrorSchema = ErrorResponseSchema.meta({ id: "UnauthorizedError" });
+export const ForbiddenErrorSchema = ErrorResponseSchema.meta({ id: "ForbiddenError" });
+export const NotFoundErrorSchema = ErrorResponseSchema.meta({ id: "NotFoundError" });
+export const RateLimitErrorSchema = ErrorResponseSchema.meta({ id: "RateLimitError" });
+export const ConflictErrorSchema = ErrorResponseSchema.meta({ id: "ConflictError" });

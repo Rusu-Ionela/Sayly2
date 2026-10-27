@@ -51,7 +51,7 @@ export function registerDiscoveryPaths(registry: OpenAPIRegistry) {
     security: bearerAuth,
     request: {
       params: z.object({
-        id: z.string().openapi({ example: "clxyz...", description: "Target user id" }),
+        id: z.string().meta({ example: "clxyz...", description: "Target user id" }),
       }),
     },
     responses: {
@@ -81,7 +81,7 @@ export function registerDiscoveryPaths(registry: OpenAPIRegistry) {
     security: bearerAuth,
     request: {
       params: z.object({
-        id: z.string().openapi({ example: "clxyz...", description: "Target user id" }),
+        id: z.string().meta({ example: "clxyz...", description: "Target user id" }),
       }),
     },
     responses: {

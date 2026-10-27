@@ -1,10 +1,9 @@
 import {
   OpenAPIRegistry,
   OpenApiGeneratorV31,
-  extendZodWithOpenApi,
 } from "@asteasolutions/zod-to-openapi";
-import { z } from "zod";
 import type { Express } from "express";
+import type { ZodType } from "zod";
 import swaggerUi from "swagger-ui-express";
 
 import { env } from "../config/env";
@@ -58,7 +57,19 @@ import {
   SignupRequestSchema,
 } from "./schemas/auth.schemas";
 
-extendZodWithOpenApi(z);
+/**
+ * Always-listed component schemas. Zod 4 builds methods when a schema type is first created, so
+ * the `.openapi()` that `registry.register` relies on is missing on schemas made before
+ * `extendZodWithOpenApi`. Naming them with Zod's own `.meta({ id })` avoids that ordering trap.
+ */
+type OpenAPIDefinition = OpenAPIRegistry["definitions"][number];
+
+function namedComponents(schemas: Record<string, ZodType>): OpenAPIDefinition[] {
+  return Object.entries(schemas).map(([id, schema]) => ({
+    type: "schema",
+    schema: schema.meta({ ...schema.meta(), id }),
+  }));
+}
 
 export function buildOpenApiDocument() {
   const registry = new OpenAPIRegistry();
@@ -70,41 +81,6 @@ export function buildOpenApiDocument() {
     description: "Short-lived JWT access token from /auth/login or /auth/register",
   });
 
-  registry.register("User", UserSchema);
-  registry.register("AuthResponse", AuthResponseSchema);
-  registry.register("MeResponse", MeResponseSchema);
-  registry.register("LogoutResponse", LogoutResponseSchema);
-  registry.register("SignupRequest", SignupRequestSchema);
-  registry.register("LoginRequest", LoginRequestSchema);
-  registry.register("RefreshRequest", RefreshRequestSchema);
-  registry.register("LogoutRequest", LogoutRequestSchema);
-  registry.register("ErrorResponse", ErrorResponseSchema);
-  registry.register("ValidationError", ValidationErrorSchema);
-  registry.register("UnauthorizedError", UnauthorizedErrorSchema);
-  registry.register("ForbiddenError", ForbiddenErrorSchema);
-  registry.register("NotFoundError", NotFoundErrorSchema);
-  registry.register("RateLimitError", RateLimitErrorSchema);
-  registry.register("ConflictError", ConflictErrorSchema);
-
-  registry.register("Language", LanguageSchema);
-  registry.register("UserLanguageItem", UserLanguageItemSchema);
-  registry.register("UserLanguagesGrouped", UserLanguagesGroupedSchema);
-  registry.register("SyncUserLanguagesRequest", SyncUserLanguagesRequestSchema);
-  registry.register("DiscoverLanguage", DiscoverLanguageSchema);
-  registry.register("DiscoverUser", DiscoverUserSchema);
-  registry.register("DiscoverPageMeta", DiscoverPageMetaSchema);
-  registry.register("DiscoverPage", DiscoverPageSchema);
-  registry.register("DiscoverPublicLanguage", DiscoverPublicLanguageSchema);
-  registry.register("DiscoverPublicProfile", DiscoverPublicProfileSchema);
-  registry.register("DiscoverQuery", DiscoverQueryOpenApiSchema);
-  registry.register("ChatMessage", ChatMessageSchema);
-  registry.register("ChatPartner", ChatPartnerSchema);
-  registry.register("ConversationListItem", ConversationListItemSchema);
-  registry.register("ConversationsPage", ConversationsPageSchema);
-  registry.register("MessagesPage", MessagesPageSchema);
-  registry.register("SendMessageRequest", SendMessageRequestSchema);
-  registry.register("MarkReadResponse", MarkReadResponseSchema);
-
   registerAuthPaths(registry);
   registerLanguagePaths(registry);
   registerDiscoveryPaths(registry);
@@ -115,7 +91,44 @@ export function buildOpenApiDocument() {
   registerFollowPaths(registry);
   registerReferencePaths(registry);
 
-  const generator = new OpenApiGeneratorV31(registry.definitions);
+  const generator = new OpenApiGeneratorV31([
+    ...registry.definitions,
+    ...namedComponents({
+    User: UserSchema,
+    AuthResponse: AuthResponseSchema,
+    MeResponse: MeResponseSchema,
+    LogoutResponse: LogoutResponseSchema,
+    SignupRequest: SignupRequestSchema,
+    LoginRequest: LoginRequestSchema,
+    RefreshRequest: RefreshRequestSchema,
+    LogoutRequest: LogoutRequestSchema,
+    ErrorResponse: ErrorResponseSchema,
+    ValidationError: ValidationErrorSchema,
+    UnauthorizedError: UnauthorizedErrorSchema,
+    ForbiddenError: ForbiddenErrorSchema,
+    NotFoundError: NotFoundErrorSchema,
+    RateLimitError: RateLimitErrorSchema,
+    ConflictError: ConflictErrorSchema,
+    Language: LanguageSchema,
+    UserLanguageItem: UserLanguageItemSchema,
+    UserLanguagesGrouped: UserLanguagesGroupedSchema,
+    SyncUserLanguagesRequest: SyncUserLanguagesRequestSchema,
+    DiscoverLanguage: DiscoverLanguageSchema,
+    DiscoverUser: DiscoverUserSchema,
+    DiscoverPageMeta: DiscoverPageMetaSchema,
+    DiscoverPage: DiscoverPageSchema,
+    DiscoverPublicLanguage: DiscoverPublicLanguageSchema,
+    DiscoverPublicProfile: DiscoverPublicProfileSchema,
+    DiscoverQuery: DiscoverQueryOpenApiSchema,
+    ChatMessage: ChatMessageSchema,
+    ChatPartner: ChatPartnerSchema,
+    ConversationListItem: ConversationListItemSchema,
+    ConversationsPage: ConversationsPageSchema,
+    MessagesPage: MessagesPageSchema,
+    SendMessageRequest: SendMessageRequestSchema,
+    MarkReadResponse: MarkReadResponseSchema,
+    }),
+  ]);
 
   return generator.generateDocument({
     openapi: "3.1.0",

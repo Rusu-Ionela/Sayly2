@@ -1,33 +1,28 @@
 import type { OpenAPIRegistry } from "@asteasolutions/zod-to-openapi";
 import { z } from "zod";
+import { RATING_MAX, RATING_MIN, REFERENCE_BODY_MAX, REFERENCES_PAGE_SIZE } from "@sayly/shared";
 
-import {
-  RATING_MAX,
-  RATING_MIN,
-  REFERENCE_BODY_MAX,
-  REFERENCES_PAGE_SIZE,
-} from "../../features/references/types";
 import { bearerAuth, commonErrorResponses } from "../components/responses";
 import { ErrorResponseSchema } from "../schemas/error.schemas";
 
 const userIdParams = z.object({
-  userId: z.string().openapi({ example: "clxyz...", description: "The person the references are about" }),
+  userId: z.string().meta({ example: "clxyz...", description: "The person the references are about" }),
 });
 const rating = z.number().int().min(RATING_MIN).max(RATING_MAX);
 const myReference = z
   .object({ id: z.string(), rating, body: z.string(), createdAt: z.string() })
-  .openapi("MyReference");
+  .meta({ id: "MyReference" });
 const reference = myReference
   .extend({
     author: z.object({ id: z.string(), displayName: z.string(), avatarUrl: z.string().nullable() }),
   })
-  .openapi("Reference");
+  .meta({ id: "Reference" });
 export const ReferenceSummarySchema = z
   .object({
     total: z.number().int(),
-    positive: z.number().int().openapi({ description: "Rated 4 or 5" }),
+    positive: z.number().int().meta({ description: "Rated 4 or 5" }),
   })
-  .openapi("ReferenceSummary");
+  .meta({ id: "ReferenceSummary" });
 
 /** References language partners leave on each other's profiles. */
 export function registerReferencePaths(registry: OpenAPIRegistry) {
@@ -54,9 +49,9 @@ export function registerReferencePaths(registry: OpenAPIRegistry) {
                 page: z.number().int(),
                 hasMore: z.boolean(),
                 canWrite: z.boolean(),
-                mine: myReference.nullable(),
+                mine: z.union([myReference, z.null()]),
               })
-              .openapi("ReferencesPage"),
+              .meta({ id: "ReferencesPage" }),
           },
         },
       },

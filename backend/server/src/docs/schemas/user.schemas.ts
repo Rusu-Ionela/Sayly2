@@ -1,22 +1,19 @@
 import { z } from "zod";
-import { extendZodWithOpenApi } from "@asteasolutions/zod-to-openapi";
-
-extendZodWithOpenApi(z);
 
 export const UserSchema = z
   .object({
-    id: z.string().openapi({ example: "clx123abc" }),
-    email: z.string().email().openapi({ example: "learner@example.com" }),
-    displayName: z.string().openapi({ example: "Aryan" }),
-    bio: z.string().openapi({ example: "" }),
-    photoUrl: z.string().nullable().openapi({ example: null }),
-    emailVerifiedAt: z.string().datetime().nullable().openapi({ example: null }),
+    id: z.string().meta({ example: "clx123abc" }),
+    email: z.string().email().meta({ example: "learner@example.com" }),
+    displayName: z.string().meta({ example: "Aryan" }),
+    bio: z.string().meta({ example: "" }),
+    photoUrl: z.string().nullable().meta({ example: null }),
+    emailVerifiedAt: z.string().datetime().nullable().meta({ example: null }),
     status: z.enum(["ACTIVE", "SUSPENDED", "DELETED"]),
     role: z.enum(["USER", "ADMIN"]),
     createdAt: z.string().datetime(),
     updatedAt: z.string().datetime(),
   })
-  .openapi("User");
+  .meta({ id: "User" });
 
 export const AuthResponseSchema = z
   .object({
@@ -24,16 +21,16 @@ export const AuthResponseSchema = z
     refreshToken: z.string(),
     user: UserSchema,
   })
-  .openapi("AuthResponse");
+  .meta({ id: "AuthResponse" });
 
 export const MeResponseSchema = z
   .object({
     user: UserSchema,
   })
-  .openapi("MeResponse");
+  .meta({ id: "MeResponse" });
 
 export const LogoutResponseSchema = z
   .object({
     ok: z.literal(true),
   })
-  .openapi("LogoutResponse");
+  .meta({ id: "LogoutResponse" });

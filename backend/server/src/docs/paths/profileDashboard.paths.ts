@@ -109,7 +109,7 @@ export function registerProfileDashboardPaths(registry: OpenAPIRegistry) {
     tags: ["Profile"],
     summary: "Resolve a shared Sayly ID (only while the owner shows it)",
     security: bearerAuth,
-    request: { params: z.object({ saylyId: z.string().openapi({ example: "K7QF3MZA" }) }) },
+    request: { params: z.object({ saylyId: z.string().meta({ example: "K7QF3MZA" }) }) },
     responses: { ...ok("Member id", z.object({ userId: z.string() })), 404: commonErrorResponses[404]! },
   });
 

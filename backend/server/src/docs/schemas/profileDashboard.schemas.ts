@@ -1,16 +1,13 @@
 import { z } from "zod";
-import { extendZodWithOpenApi } from "@asteasolutions/zod-to-openapi";
-
-extendZodWithOpenApi(z);
 
 const languageBadge = z.object({ name: z.string(), flagEmoji: z.string() }).nullable();
 
 export const MemberSummarySchema = z
   .object({
     id: z.string(),
-    displayName: z.string().openapi({ example: "Yuki" }),
+    displayName: z.string().meta({ example: "Yuki" }),
     avatarUrl: z.string().nullable(),
-    country: z.string().openapi({ description: '"" when the member hides their location' }),
+    country: z.string().meta({ description: '"" when the member hides their location' }),
     city: z.string().nullable(),
     isPro: z.boolean(),
     nativeLanguage: languageBadge,
@@ -18,11 +15,11 @@ export const MemberSummarySchema = z
     onlineStatus: z.enum(["ONLINE", "OFFLINE", "UNKNOWN"]),
     lastSeen: z.string().nullable(),
   })
-  .openapi("MemberSummary");
+  .meta({ id: "MemberSummary" });
 
 export const ProfileVisitsPageSchema = z
   .object({
-    locked: z.boolean().openapi({ description: "true for non-Pro members: counts only, no items" }),
+    locked: z.boolean().meta({ description: "true for non-Pro members: counts only, no items" }),
     total: z.number().int(),
     newCount: z.number().int(),
     items: z.array(
@@ -30,28 +27,28 @@ export const ProfileVisitsPageSchema = z
     ),
     nextOffset: z.number().int().nullable(),
   })
-  .openapi("ProfileVisitsPage");
+  .meta({ id: "ProfileVisitsPage" });
 
 export const ConversationTopicsSchema = z
   .object({
     items: z.array(
       z.object({
         id: z.string(),
-        title: z.string().openapi({ example: "Learning to surf" }),
+        title: z.string().meta({ example: "Learning to surf" }),
         isMain: z.boolean(),
         createdAt: z.string(),
       }),
     ),
-    max: z.number().int().openapi({ example: 10 }),
+    max: z.number().int().meta({ example: 10 }),
   })
-  .openapi("ConversationTopics");
+  .meta({ id: "ConversationTopics" });
 
 export const CreateTopicRequestSchema = z
   .object({
     title: z.string().min(3).max(80),
     isMain: z.boolean().optional(),
   })
-  .openapi("CreateTopicRequest");
+  .meta({ id: "CreateTopicRequest" });
 
 export const CertificateOffersSchema = z
   .object({
@@ -64,23 +61,23 @@ export const CertificateOffersSchema = z
         format: z.literal("ONLINE"),
         instantResult: z.boolean(),
         price: z.object({
-          currency: z.string().openapi({ example: "USD" }),
-          amountMinor: z.number().int().openapi({ example: 266 }),
-          originalAmountMinor: z.number().int().openapi({ example: 443 }),
+          currency: z.string().meta({ example: "USD" }),
+          amountMinor: z.number().int().meta({ example: 266 }),
+          originalAmountMinor: z.number().int().meta({ example: 443 }),
         }),
       }),
     ),
     freeRetake: z.boolean(),
     purchasable: z.boolean(),
   })
-  .openapi("CertificateOffers");
+  .meta({ id: "CertificateOffers" });
 
 export const ExpressionsSchema = z
   .object({
     languages: z.array(z.string()),
     items: z.array(
       z.object({
-        id: z.string().openapi({ example: "en-spill-the-beans" }),
+        id: z.string().meta({ example: "en-spill-the-beans" }),
         languageCode: z.string(),
         phrase: z.string(),
         meaning: z.string(),
@@ -89,4 +86,4 @@ export const ExpressionsSchema = z
       }),
     ),
   })
-  .openapi("Expressions");
+  .meta({ id: "Expressions" });
