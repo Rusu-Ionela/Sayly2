@@ -47,7 +47,7 @@
     "express": "^5.1.0",
     "helmet": "^8.3.0",
     "jose": "^6.2.10",
-    "multer": "^2.3.0",
+    "multer": "^2.5.0",
     "nodemailer": "^7.0.13",
     "pg": "^8.23.0",
     "redis": "^4.7.1",
@@ -60,7 +60,7 @@
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
-    "@types/multer": "^2.2.0",
+    "@types/multer": "^2.3.0",
     "@types/node": "^24.2.0",
     "@types/nodemailer": "^6.4.24",
     "@types/pg": "^8.23.1",
