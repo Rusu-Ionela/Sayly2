@@ -15,7 +15,7 @@ jobs:
       run:
         working-directory: backend/server
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v4
         with:
           node-version: 24
@@ -48,7 +48,7 @@ jobs:
       TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/sayly_test
       DIRECT_URL: postgresql://postgres:postgres@localhost:5432/sayly_test
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v4
         with:
           node-version: 24
@@ -72,7 +72,7 @@ jobs:
       run:
         working-directory: frontend/client
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v4
         with:
           node-version: 24
@@ -92,7 +92,7 @@ jobs:
     name: Lint GitHub Actions workflows
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: rhysd/actionlint@v1
 
   quality-gate:
