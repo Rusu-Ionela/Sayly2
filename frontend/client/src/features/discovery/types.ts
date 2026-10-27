@@ -28,15 +28,8 @@ export type DiscoveryUser = {
   matchLabel: string;
 };
 
-/** DISC-003 proficiency filter (matches backend CEFR-style levels). */
-export type DiscoveryProficiencyFilter =
-  | "BEGINNER"
-  | "ELEMENTARY"
-  | "INTERMEDIATE"
-  | "UPPER_INTERMEDIATE"
-  | "ADVANCED"
-  | "FLUENT"
-  | "NATIVE";
+/** DISC-003 proficiency filter. */
+export type DiscoveryProficiencyFilter = ProficiencyLevel;
 
 export type DiscoveryFilters = {
   spokenLanguage?: string;

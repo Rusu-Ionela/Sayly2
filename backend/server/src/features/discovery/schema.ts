@@ -1,7 +1,7 @@
 import { z } from "zod";
+import { PRACTICE_GOALS } from "@sayly/shared";
 
 import { proficiencySchema } from "../languages/schema";
-import { PRACTICE_GOALS } from "../users/practiceGoals";
 
 /** DISC-003 proficiency filter — catalog levels stored on UserLanguage. */
 export const DISCOVERY_PROFICIENCY_VALUES = [

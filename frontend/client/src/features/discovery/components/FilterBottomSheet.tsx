@@ -15,15 +15,10 @@ import { LanguageCatalogModal } from "@/features/languages/components/LanguageCa
 import { useLanguages } from "@/features/languages/hooks/useLanguages";
 import type { Language } from "@/features/languages/types";
 import { findCatalogLanguage, languageFlag } from "@/features/languages/utils";
-import {
-  WORLD_COUNTRIES,
-  countryFlagEmoji,
-  findCountryByName,
-  type CountryOption,
-} from "@/shared/data/countries";
 import { KeyboardSafeView } from "@/shared/components/KeyboardSafeView";
 import { useColors } from "@/shared/theme";
 import { spacing } from "@/shared/theme/spacing";
+import { type Country, countryFlagEmoji, findCountryByName, searchCountries } from "@sayly/shared";
 
 import type { DiscoveryFilters } from "../types";
 import { countryFlag } from "../utils";
@@ -116,16 +111,7 @@ export function FilterBottomSheet({ visible, value, onClose, onApply }: FilterBo
     return ids;
   }, [draft.learningLanguage, draft.spokenLanguage, picker]);
 
-  const filteredCountries = useMemo(() => {
-    const needle = countryQuery.trim().toLowerCase();
-    if (!needle) {
-      return WORLD_COUNTRIES;
-    }
-    return WORLD_COUNTRIES.filter(
-      (country) =>
-        country.name.toLowerCase().includes(needle) || country.code.toLowerCase().includes(needle),
-    );
-  }, [countryQuery]);
+  const filteredCountries = useMemo(() => searchCountries(countryQuery), [countryQuery]);
 
   const pickLanguage = (language: Language) => {
     if (picker === "spoken") {
@@ -137,7 +123,7 @@ export function FilterBottomSheet({ visible, value, onClose, onApply }: FilterBo
     setPicker(null);
   };
 
-  const pickCountry = (country: CountryOption) => {
+  const pickCountry = (country: Country) => {
     setDraft((prev) => ({ ...prev, country: country.name }));
     setPicker(null);
     setCountryQuery("");

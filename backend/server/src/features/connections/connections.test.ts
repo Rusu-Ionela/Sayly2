@@ -9,7 +9,9 @@ vi.mock("./repository", () => ({
   listConnections: vi.fn(),
   requestConnection: vi.fn(),
   respondToConnection: vi.fn(),
+  toViewerDto: vi.fn(),
 }));
+vi.mock("../users/memberSummary", () => ({ loadMemberSummaries: vi.fn(async () => new Map()) }));
 
 import { createApp } from "../../lib/app";
 import { getOrCreateDirectConversation } from "../messaging/conversations.repository";
@@ -63,7 +65,7 @@ describe("connection request routes", () => {
       created: true,
       accepted: false,
     });
-    vi.mocked(repository.getConnection).mockResolvedValueOnce(connection);
+    vi.mocked(repository.toViewerDto).mockResolvedValueOnce(connection);
 
     const res = await request(app)
       .post("/connections/user-2")
@@ -78,7 +80,9 @@ describe("connection request routes", () => {
       "Would you like to practise together?",
     );
     expect(notifyConnectionRequest).toHaveBeenCalledWith("viewer-1", "user-2");
-    expect(repository.getConnection).toHaveBeenCalledWith("viewer-1", "user-2");
+    // The response is built from the row just written, without a second visibility round trip.
+    expect(repository.getConnection).not.toHaveBeenCalled();
+    expect(vi.mocked(repository.toViewerDto).mock.calls[0]?.[1]).toBe("viewer-1");
   });
 
   it("validates and sends only explicit connection actions", async () => {
@@ -94,7 +98,7 @@ describe("connection request routes", () => {
       },
       changed: true,
     });
-    vi.mocked(repository.getConnection).mockResolvedValueOnce({ ...connection, status: "ACCEPTED" });
+    vi.mocked(repository.toViewerDto).mockResolvedValueOnce({ ...connection, status: "ACCEPTED" });
 
     await request(app)
       .patch("/connections/connection-1")
@@ -125,7 +129,7 @@ describe("connection request routes", () => {
       },
       changed: true,
     });
-    vi.mocked(repository.getConnection).mockResolvedValueOnce(null);
+    vi.mocked(repository.toViewerDto).mockResolvedValueOnce(null);
 
     await request(app)
       .patch("/connections/connection-1")

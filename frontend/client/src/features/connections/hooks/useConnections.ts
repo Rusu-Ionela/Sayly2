@@ -1,5 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import { queryKeys } from "@/lib/queryKeys";
+
 import {
   getConnection,
   listConnections,
@@ -8,8 +10,8 @@ import {
   type Connection,
 } from "../api/connectionsApi";
 
-const connectionKey = (userId: string) => ["connections", "with", userId] as const;
-const connectionsKey = ["connections"] as const;
+const connectionKey = queryKeys.connections.with;
+const connectionsKey = queryKeys.connections.all;
 
 export function useConnection(userId: string, enabled = true) {
   return useQuery({
@@ -36,8 +38,13 @@ export function useConnectionAction(userId: string) {
     onSuccess: update,
   });
   const respond = useMutation({
-    mutationFn: ({ id, action }: { id: string; action: "ACCEPT" | "DECLINE" | "CANCEL" | "REMOVE" }) =>
-      respondToConnection(id, action),
+    mutationFn: ({
+      id,
+      action,
+    }: {
+      id: string;
+      action: "ACCEPT" | "DECLINE" | "CANCEL" | "REMOVE";
+    }) => respondToConnection(id, action),
     onSuccess: update,
   });
 

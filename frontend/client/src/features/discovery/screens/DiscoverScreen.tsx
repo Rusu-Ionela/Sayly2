@@ -1,10 +1,9 @@
+import { FlashList, type FlashListRef } from "@shopify/flash-list";
 import { Ionicons } from "@expo/vector-icons";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  FlatList,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -22,6 +21,10 @@ import { useProfile } from "@/features/profile";
 import type { MainTabScreenProps } from "@/navigation/types";
 import { useFloatingTabBarPadding } from "@/navigation/floatingTabBar";
 import { AppRefreshControl } from "@/shared/components/AppRefreshControl";
+import { IcebreakerCard } from "@/features/icebreakers";
+import { usePracticeLanguages } from "@/features/icebreakers/hooks";
+import { RadarView, VoiceSparksBar } from "@/features/pulse";
+import { StreakBadge } from "@/features/streaks";
 import { Screen } from "@/shared/components/Screen";
 import { SearchField } from "@/shared/components/SearchField";
 import { useDebounce } from "@/shared/hooks/useDebounce";
@@ -44,6 +47,7 @@ export function DiscoverScreen({ navigation }: MainTabScreenProps<"Community">) 
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [isPullRefreshing, setIsPullRefreshing] = useState(false);
   const [bestMatchesOnly, setBestMatchesOnly] = useState(false);
+  const [radarOpen, setRadarOpen] = useState(false);
   const [searching, setSearching] = useState(false);
   const [connectionTarget, setConnectionTarget] = useState<DiscoveryUser | null>(null);
 
@@ -91,6 +95,24 @@ export function DiscoverScreen({ navigation }: MainTabScreenProps<"Community">) 
   );
 
   const tabBarPadding = useFloatingTabBarPadding();
+  const practiceLanguages = usePracticeLanguages();
+
+  const startFlashQuest = useCallback(() => {
+    const language = practiceLanguages[0];
+    if (!language) {
+      Alert.alert("Add a language", "Add a language you’re learning to start a Flash Quest.", [
+        { text: "Not now", style: "cancel" },
+        { text: "Add language", onPress: () => navigation.navigate("LanguagePreferences") },
+      ]);
+      return;
+    }
+    navigation.navigate("FlashQuest", { languageId: language.id, languageName: language.name });
+  }, [navigation, practiceLanguages]);
+
+  const openChat = useCallback(
+    (conversationId: string) => navigation.navigate("Conversation", { conversationId }),
+    [navigation],
+  );
   const showSkeleton = discovery.isPending && !discovery.data;
 
   const openPublicProfile = useCallback(
@@ -123,29 +145,44 @@ export function DiscoverScreen({ navigation }: MainTabScreenProps<"Community">) 
     [connectionRequest, connectionTarget],
   );
 
+  const { refresh, fetchNextPage, hasNextPage, isFetchingNextPage } = discovery;
+
   const onRefresh = useCallback(async () => {
     setIsPullRefreshing(true);
     try {
-      await discovery.refresh();
+      await refresh();
     } finally {
       setIsPullRefreshing(false);
     }
-  }, [discovery.refresh]);
+  }, [refresh]);
+
+  // Answering today's icebreaker: bring its field to the top of the list, above the keyboard.
+  // While typing, a spacer under the list makes that scroll possible even with few partners.
+  const listRef = useRef<FlashListRef<DiscoveryUser>>(null);
+  const [composerFocused, setComposerFocused] = useState(false);
+  const onComposerFocus = useCallback((offsetY: number) => {
+    setComposerFocused(true);
+    setTimeout(() => {
+      listRef.current?.scrollToOffset({
+        offset: Math.max(0, offsetY - spacing.sm),
+        animated: true,
+      });
+    }, 50);
+  }, []);
+  const onComposerBlur = useCallback(() => setComposerFocused(false), []);
+  const icebreaker = useMemo(
+    () => <IcebreakerCard onComposerFocus={onComposerFocus} onComposerBlur={onComposerBlur} />,
+    [onComposerFocus, onComposerBlur],
+  );
 
   const loadNextPage = useCallback(() => {
     if (users.length === 0 || isPullRefreshing) {
       return;
     }
-    if (discovery.hasNextPage && !discovery.isFetchingNextPage) {
-      void discovery.fetchNextPage();
+    if (hasNextPage && !isFetchingNextPage) {
+      void fetchNextPage();
     }
-  }, [
-    discovery.fetchNextPage,
-    discovery.hasNextPage,
-    discovery.isFetchingNextPage,
-    isPullRefreshing,
-    users.length,
-  ]);
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage, isPullRefreshing, users.length]);
 
   const renderItem = useCallback(
     ({ item }: { item: DiscoveryUser }) => (
@@ -165,6 +202,11 @@ export function DiscoverScreen({ navigation }: MainTabScreenProps<"Community">) 
     ],
   );
 
+  const iconButton = [
+    styles.iconButton,
+    { backgroundColor: colors.card, borderColor: colors.cardBorder },
+  ];
+
   return (
     <Screen>
       <View style={styles.topBar}>
@@ -176,7 +218,7 @@ export function DiscoverScreen({ navigation }: MainTabScreenProps<"Community">) 
           <Avatar
             uri={profile.data?.avatarUrl ?? profile.data?.profileImageUrl ?? profile.data?.photoUrl}
             name={profile.data?.displayName}
-            size={44}
+            size={40}
             square
           />
         </Pressable>
@@ -192,28 +234,54 @@ export function DiscoverScreen({ navigation }: MainTabScreenProps<"Community">) 
           </Pressable>
         ) : null}
         <View style={styles.topIcons}>
+          <StreakBadge />
+          <Pressable
+            onPress={startFlashQuest}
+            hitSlop={4}
+            style={({ pressed }) => [iconButton, pressed && styles.pressed]}
+            accessibilityRole="button"
+            accessibilityLabel="Start a 3-minute Flash Quest"
+          >
+            <Ionicons name="flash" size={20} color={colors.accent} />
+          </Pressable>
           <Pressable
             onPress={() => {
               setSearching((open) => !open);
               setSearchInput("");
             }}
-            hitSlop={8}
+            hitSlop={4}
+            style={({ pressed }) => [
+              iconButton,
+              searching && { backgroundColor: colors.accentSoft },
+              pressed && styles.pressed,
+            ]}
             accessibilityRole="button"
             accessibilityLabel="Search partners"
+            accessibilityState={{ expanded: searching }}
           >
-            <Ionicons name="search-outline" size={26} color={colors.muted} />
+            <Ionicons
+              name={searching ? "close" : "search-outline"}
+              size={20}
+              color={searching ? colors.accent : colors.text}
+            />
           </Pressable>
           <Pressable
             onPress={() => setFiltersOpen(true)}
-            hitSlop={8}
+            hitSlop={4}
+            style={({ pressed }) => [iconButton, pressed && styles.pressed]}
             accessibilityRole="button"
             accessibilityLabel={
               activeFilterCount > 0 ? `Filters, ${activeFilterCount} active` : "Filters"
             }
           >
-            <Ionicons name="options-outline" size={26} color={colors.muted} />
+            <Ionicons name="options-outline" size={20} color={colors.text} />
             {activeFilterCount > 0 ? (
-              <View style={[styles.filterDot, { backgroundColor: colors.accent }]} />
+              <View
+                style={[
+                  styles.filterDot,
+                  { backgroundColor: colors.accent, borderColor: colors.card },
+                ]}
+              />
             ) : null}
           </Pressable>
         </View>
@@ -229,14 +297,27 @@ export function DiscoverScreen({ navigation }: MainTabScreenProps<"Community">) 
         </View>
       ) : null}
 
+      <VoiceSparksBar />
+
       <View style={[styles.tabs, { borderBottomColor: colors.border }]} accessibilityRole="tablist">
         {[
-          { label: "All", active: !bestMatchesOnly, onPress: () => setBestMatchesOnly(false) },
+          {
+            label: "All",
+            active: !bestMatchesOnly && !radarOpen,
+            onPress: () => {
+              setRadarOpen(false);
+              setBestMatchesOnly(false);
+            },
+          },
           {
             label: "Best matches",
-            active: bestMatchesOnly,
-            onPress: () => setBestMatchesOnly(true),
+            active: bestMatchesOnly && !radarOpen,
+            onPress: () => {
+              setRadarOpen(false);
+              setBestMatchesOnly(true);
+            },
           },
+          { label: "● Live radar", active: radarOpen, onPress: () => setRadarOpen(true) },
         ].map((tab) => (
           <Pressable
             key={tab.label}
@@ -252,35 +333,46 @@ export function DiscoverScreen({ navigation }: MainTabScreenProps<"Community">) 
         ))}
       </View>
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.quickScroll}
-        contentContainerStyle={styles.quickChips}
-      >
-        {languageChips.map((chip) => (
-          <Chip
-            key={chip.key}
-            icon="checkmark"
-            label={chip.label}
-            selected
-            onPress={chip.clear}
-            accessibilityLabel={`Remove ${chip.label} filter`}
-          />
-        ))}
-        <Pressable
-          onPress={() => setFiltersOpen(true)}
-          style={styles.addLanguage}
-          accessibilityRole="button"
-          accessibilityLabel="Add a language filter"
+      {radarOpen ? null : (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.quickScroll}
+          contentContainerStyle={styles.quickChips}
         >
-          <Ionicons name="add" size={22} color={colors.accent} />
-          <Text style={[styles.addLanguageText, { color: colors.accent }]}>Add language</Text>
-        </Pressable>
-      </ScrollView>
+          {languageChips.map((chip) => (
+            <Chip
+              key={chip.key}
+              icon="checkmark"
+              label={chip.label}
+              selected
+              onPress={chip.clear}
+              accessibilityLabel={`Remove ${chip.label} filter`}
+            />
+          ))}
+          <Pressable
+            onPress={() => setFiltersOpen(true)}
+            style={styles.addLanguage}
+            accessibilityRole="button"
+            accessibilityLabel="Add a language filter"
+          >
+            <Ionicons name="add" size={22} color={colors.accent} />
+            <Text style={[styles.addLanguageText, { color: colors.accent }]}>Add language</Text>
+          </Pressable>
+        </ScrollView>
+      )}
 
       <View style={styles.stage}>
-        {showSkeleton ? (
+        {radarOpen ? (
+          <View style={styles.radarStage}>
+            <RadarView
+              bottomPadding={tabBarPadding}
+              onOpenProfile={openPublicProfile}
+              onOpenChat={openChat}
+              onStartQuest={startFlashQuest}
+            />
+          </View>
+        ) : showSkeleton ? (
           <Animated.View
             key="discovery-loading"
             exiting={FadeOut.duration(280)}
@@ -301,7 +393,8 @@ export function DiscoverScreen({ navigation }: MainTabScreenProps<"Community">) 
           </View>
         ) : (
           <View style={styles.list}>
-            <FlatList
+            <FlashList
+              ref={listRef}
               showsVerticalScrollIndicator={false}
               style={styles.list}
               data={users}
@@ -309,10 +402,7 @@ export function DiscoverScreen({ navigation }: MainTabScreenProps<"Community">) 
               keyboardDismissMode="on-drag"
               keyboardShouldPersistTaps="handled"
               renderItem={renderItem}
-              initialNumToRender={8}
-              maxToRenderPerBatch={8}
-              windowSize={7}
-              removeClippedSubviews={Platform.OS === "android"}
+              ListHeaderComponent={icebreaker}
               ListEmptyComponent={
                 <DiscoveryEmptyState
                   hasFilters={hasAnyQuery}
@@ -334,13 +424,16 @@ export function DiscoverScreen({ navigation }: MainTabScreenProps<"Community">) 
               }
               contentContainerStyle={[styles.listContent, { paddingBottom: tabBarPadding }]}
               ListFooterComponent={
-                discovery.isFetchingNextPage ? (
-                  <ActivityIndicator
-                    color={colors.accent}
-                    style={styles.footerSpinner}
-                    accessibilityLabel="Loading more partners"
-                  />
-                ) : null
+                <>
+                  {discovery.isFetchingNextPage ? (
+                    <ActivityIndicator
+                      color={colors.accent}
+                      style={styles.footerSpinner}
+                      accessibilityLabel="Loading more partners"
+                    />
+                  ) : null}
+                  {composerFocused ? <View style={styles.keyboardSpacer} /> : null}
+                </>
               }
             />
           </View>
@@ -373,7 +466,13 @@ export function DiscoverScreen({ navigation }: MainTabScreenProps<"Community">) 
 }
 
 const styles = StyleSheet.create({
-  topBar: { flexDirection: "row", alignItems: "center", gap: spacing.md, marginBottom: spacing.sm },
+  topBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    minHeight: 44,
+    marginBottom: spacing.sm,
+  },
   hiddenPill: {
     flexDirection: "row",
     alignItems: "center",
@@ -383,8 +482,31 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   hiddenText: { fontSize: 13, fontWeight: "700", letterSpacing: 0.4 },
-  topIcons: { flex: 1, flexDirection: "row", justifyContent: "flex-end", gap: spacing.lg },
-  filterDot: { position: "absolute", top: -2, right: -2, width: 9, height: 9, borderRadius: 5 },
+  topIcons: {
+    flex: 1,
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  iconButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: StyleSheet.hairlineWidth,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  pressed: { opacity: 0.6 },
+  filterDot: {
+    position: "absolute",
+    top: 6,
+    right: 6,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    borderWidth: 2,
+  },
   searchRow: { flexDirection: "row", marginBottom: spacing.sm },
   tabs: { flexDirection: "row", borderBottomWidth: StyleSheet.hairlineWidth },
   tab: {
@@ -412,8 +534,15 @@ const styles = StyleSheet.create({
   stage: {
     flex: 1,
   },
+  radarStage: {
+    flex: 1,
+    marginTop: spacing.md,
+  },
   listContent: {
     flexGrow: 1,
+  },
+  keyboardSpacer: {
+    height: 420,
   },
   centered: {
     alignItems: "center",

@@ -1,8 +1,8 @@
 import { apiClient } from "@/lib/apiClient";
 import type { MemberSummary } from "@/shared/types/member";
 
-export type ConnectionStatus = "PENDING" | "ACCEPTED" | "DECLINED" | "CANCELLED";
-export type ConnectionDirection = "INCOMING" | "OUTGOING";
+type ConnectionStatus = "PENDING" | "ACCEPTED" | "DECLINED" | "CANCELLED";
+type ConnectionDirection = "INCOMING" | "OUTGOING";
 
 export type Connection = {
   id: string;
@@ -34,6 +34,9 @@ export function requestConnection(userId: string, introMessage?: string) {
   });
 }
 
-export function respondToConnection(id: string, action: "ACCEPT" | "DECLINE" | "CANCEL" | "REMOVE") {
+export function respondToConnection(
+  id: string,
+  action: "ACCEPT" | "DECLINE" | "CANCEL" | "REMOVE",
+) {
   return apiClient.patch<Connection>(`/connections/${encodeURIComponent(id)}`, { action });
 }

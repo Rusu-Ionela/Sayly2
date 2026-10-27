@@ -12,6 +12,7 @@ import { WarmLoadingView } from "@/shared/components/WarmLoadingView";
 import { useColors } from "@/shared/theme";
 import { radius } from "@/shared/theme/radius";
 import { spacing } from "@/shared/theme/spacing";
+import { confirmAction } from "@/shared/utils/confirmAction";
 
 import type { Connection } from "../api/connectionsApi";
 import { useConnectionAction, useConnections } from "../hooks/useConnections";
@@ -38,14 +39,14 @@ function RequestRow({ connection }: { connection: Connection }) {
           disabled={busy}
           style={[styles.action, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}
           onPress={() =>
-            Alert.alert(
-              "Remove connection",
-              "You will keep your conversation history, but this person will no longer be an active connection.",
-              [
-                { text: "Cancel", style: "cancel" },
-                { text: "Remove", style: "destructive", onPress: () => action("REMOVE") },
-              ],
-            )
+            confirmAction({
+              title: "Remove connection",
+              message:
+                "You will keep your conversation history, but this person will no longer be an active connection.",
+              confirmLabel: "Remove",
+              cancelLabel: "Cancel",
+              onConfirm: () => action("REMOVE"),
+            })
           }
           accessibilityRole="button"
           accessibilityLabel={`Remove connection with ${connection.member.displayName}`}

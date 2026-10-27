@@ -1,9 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import request from "supertest";
+import { countryMatchCandidates } from "@sayly/shared";
 
-import { AppError } from "../../shared/errors/AppError";
 import { assertNoSensitivePublicFields } from "../users/dto";
-import { countryMatchCandidates } from "../users/countries";
 
 import { toDiscoverUserDto } from "./dto";
 import { toDiscoverPage } from "./pagination";

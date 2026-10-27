@@ -1,4 +1,4 @@
-import { countryFlagEmoji, findCountryByName } from "@/shared/data/countries";
+import { countryFlagEmoji, findCountryByName } from "@sayly/shared";
 
 import type { DiscoveryFilters, DiscoveryUser } from "./types";
 

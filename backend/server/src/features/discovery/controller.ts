@@ -4,6 +4,7 @@ import { AppError } from "../../shared/errors/AppError";
 import { requireUserId } from "../../shared/middleware/requireUserId";
 
 import { discoverQuerySchema } from "./schema";
+import { getRadar } from "./radar";
 import * as discoveryService from "./service";
 
 /** GET /discover — DISC-001 / DISC-002 / DISC-003 / DISC-004 / DISC-005. */
@@ -20,4 +21,9 @@ export async function getDiscoverUser(req: Request, res: Response) {
     throw new AppError("Missing id", 400, "VALIDATION_ERROR");
   }
   res.json(await discoveryService.getDiscoverUser(requireUserId(req), userId));
+}
+
+/** GET /discover/radar — partners active in the last 15 minutes, closest fit first. */
+export async function radar(req: Request, res: Response) {
+  res.json(await getRadar(requireUserId(req)));
 }

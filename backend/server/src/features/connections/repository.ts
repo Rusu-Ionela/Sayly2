@@ -1,10 +1,10 @@
-import { and, desc, eq, or } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, or, sql } from "drizzle-orm";
 
-import { db } from "../../db/client";
-import { connections } from "../../db/schema";
-import { lockUser, requireRow } from "../../db/helpers";
+import { db, type DbTransaction } from "../../db/client";
+import { connections, users } from "../../db/schema";
+import { requireRow } from "../../db/helpers";
 import { AppError } from "../../shared/errors/AppError";
-import { isBlockedEitherWay } from "../safety/repository";
+import { notBlockedBetween } from "../safety/blockFilter";
 import { assertVisibleMember, loadMemberSummaries } from "../users/memberSummary";
 
 import type { ConnectionDto, ConnectionsPage } from "./types";
@@ -47,22 +47,41 @@ export async function isConnectionAccepted(userId: string, otherUserId: string) 
   return Boolean(row);
 }
 
+/**
+ * One round trip that locks both members (in id order, so crossed requests cannot deadlock)
+ * and applies the PRO-001 visibility gate inside the transaction: the recipient must be an
+ * active, onboarded member and nobody may have blocked the other. Every miss is a 404.
+ */
+async function lockPairAndAssertVisible(tx: DbTransaction, requesterId: string, recipientId: string) {
+  if (requesterId === recipientId) {
+    throw new AppError("This is your own profile", 400, "BAD_REQUEST");
+  }
+  const rows = await tx
+    .select({
+      id: users.id,
+      status: users.status,
+      onboardingCompleted: users.onboardingCompleted,
+      blocked: sql<boolean>`NOT ${notBlockedBetween(requesterId, recipientId)}`,
+    })
+    .from(users)
+    .where(inArray(users.id, [requesterId, recipientId]))
+    .orderBy(asc(users.id))
+    .for("update");
+
+  const recipient = rows.find((row) => row.id === recipientId);
+  if (!recipient || recipient.status !== "ACTIVE" || !recipient.onboardingCompleted || recipient.blocked) {
+    throw new AppError("User not found", 404, "NOT_FOUND");
+  }
+}
+
 /** Creates a request, or accepts a crossed request because both members have opted in. */
 export async function requestConnection(
   requesterId: string,
   recipientId: string,
   introMessage?: string,
 ): Promise<ConnectionRequestResult> {
-  await assertVisibleMember(requesterId, recipientId);
-
   return db.transaction(async (tx) => {
-    const [firstId, secondId] = requesterId < recipientId ? [requesterId, recipientId] : [recipientId, requesterId];
-    await lockUser(tx, firstId);
-    await lockUser(tx, secondId);
-
-    if (await isBlockedEitherWay(requesterId, recipientId)) {
-      throw new AppError("User not found", 404, "NOT_FOUND");
-    }
+    await lockPairAndAssertVisible(tx, requesterId, recipientId);
 
     const [existing] = await tx.select().from(connections).where(between(requesterId, recipientId)).limit(1);
     if (existing?.status === "ACCEPTED") {
@@ -152,12 +171,42 @@ export async function respondToConnection(
   );
 }
 
+/**
+ * A row the caller just wrote, as the viewer sees it. Skips the visibility re-check of
+ * `getConnection`: the write already ran it. Pass `members` when they were loaded in parallel.
+ */
+export async function toViewerDto(
+  row: ConnectionRow,
+  viewerId: string,
+  members?: Map<string, ConnectionDto["member"]>,
+): Promise<ConnectionDto | null> {
+  const otherUserId = row.requesterId === viewerId ? row.recipientId : row.requesterId;
+  const summary = (members ?? (await loadMemberSummaries([otherUserId]))).get(otherUserId);
+  return summary ? toDto(row, viewerId, summary) : null;
+}
+
 export async function getConnection(viewerId: string, otherUserId: string): Promise<ConnectionDto | null> {
   await assertVisibleMember(viewerId, otherUserId);
   const row = await findConnectionBetween(viewerId, otherUserId);
   if (!row) return null;
   const member = (await loadMemberSummaries([otherUserId])).get(otherUserId);
   return member ? toDto(row, viewerId, member) : null;
+}
+
+/** Ids of the member's accepted language partners (their "friends"), newest first. */
+export async function listAcceptedPartnerIds(userId: string, limit = 200): Promise<string[]> {
+  const rows = await db
+    .select({ requesterId: connections.requesterId, recipientId: connections.recipientId })
+    .from(connections)
+    .where(
+      and(
+        or(eq(connections.requesterId, userId), eq(connections.recipientId, userId)),
+        eq(connections.status, "ACCEPTED"),
+      ),
+    )
+    .orderBy(desc(connections.updatedAt))
+    .limit(limit);
+  return rows.map((row) => (row.requesterId === userId ? row.recipientId : row.requesterId));
 }
 
 export async function listConnections(viewerId: string): Promise<ConnectionsPage> {

@@ -14,6 +14,7 @@ import {
   type SQL,
 } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
+import { countryMatchCandidates } from "@sayly/shared";
 
 import { db } from "../../db/client";
 import type { ProficiencyLevel, UserLanguageType } from "../../db/schema";
@@ -26,7 +27,6 @@ import {
   users,
 } from "../../db/schema";
 import { AppError } from "../../shared/errors/AppError";
-import { countryMatchCandidates } from "../users/countries";
 import { visibleLocation } from "../users/settings";
 
 import { toDiscoverUserDto } from "./dto";
