@@ -1,6 +1,7 @@
+import { FlashList } from "@shopify/flash-list";
 import { Ionicons } from "@expo/vector-icons";
 import { useMemo } from "react";
-import { FlatList, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
 import { formatChatTime } from "@/features/chat/utils/formatChatTime";
 import { AppRefreshControl } from "@/shared/components/AppRefreshControl";
@@ -65,7 +66,7 @@ export function NotificationsScreen() {
           <Text style={[styles.markAllText, { color: colors.accent }]}>Mark all as read</Text>
         </PressableScale>
       ) : null}
-      <FlatList
+      <FlashList
         data={items}
         keyExtractor={(item) => item.id}
         showsVerticalScrollIndicator={false}

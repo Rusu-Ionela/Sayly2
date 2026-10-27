@@ -1,8 +1,11 @@
+import { PUSH_CHANNELS } from "@sayly/shared";
 import { useEffect } from "react";
 import { Platform } from "react-native";
 
 import { registerSignOutTask } from "@/features/auth";
 import { log } from "@/lib/logger";
+import { queryClient } from "@/lib/queryClient";
+import { queryKeys } from "@/lib/queryKeys";
 
 import { registerPushToken, unregisterPushToken } from "./api";
 import { openNotificationTarget } from "./openTarget";
@@ -48,9 +51,17 @@ export function usePushNotifications() {
       if (target) openNotificationTarget(target);
     };
 
+    // Tapped while the app was in the background or closed.
     const tapSubscription = Notifications.addNotificationResponseReceivedListener((response) =>
       open(response.notification.request.content.data),
     );
+    // Arrived while the app is open: refresh what it is about instead of waiting for a tap.
+    const receivedSubscription = Notifications.addNotificationReceivedListener((notification) => {
+      const data = notification.request.content.data as { type?: unknown } | undefined;
+      if (data?.type === "streak_reminder") {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.streak.me });
+      }
+    });
     // App launched by tapping a notification.
     void Notifications.getLastNotificationResponseAsync().then((response) => {
       if (response && !cancelled) open(response.notification.request.content.data);
@@ -63,9 +74,13 @@ export function usePushNotifications() {
     void (async () => {
       try {
         if (Platform.OS === "android") {
-          await Notifications.setNotificationChannelAsync("default", {
+          await Notifications.setNotificationChannelAsync(PUSH_CHANNELS.default, {
             name: "Messages and requests",
             importance: Notifications.AndroidImportance.HIGH,
+          });
+          await Notifications.setNotificationChannelAsync(PUSH_CHANNELS.reminders, {
+            name: "Streak reminders",
+            importance: Notifications.AndroidImportance.DEFAULT,
           });
         }
         const current = await Notifications.getPermissionsAsync();
@@ -91,6 +106,7 @@ export function usePushNotifications() {
     return () => {
       cancelled = true;
       tapSubscription.remove();
+      receivedSubscription.remove();
       unregisterTask();
     };
   }, []);

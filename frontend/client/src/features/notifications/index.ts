@@ -1,4 +1,4 @@
-export { InAppBannerProvider, useInAppBanner } from "./InAppBanner";
+export { InAppBannerProvider } from "./InAppBanner";
 export { NotificationsBell } from "./NotificationsBell";
 export { NotificationsScreen } from "./NotificationsScreen";
 export { NotificationsBridge } from "./NotificationsBridge";

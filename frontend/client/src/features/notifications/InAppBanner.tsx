@@ -88,35 +88,39 @@ function BannerCard({ banner, onClose }: { banner: Banner; onClose: () => void }
       style={[styles.wrap, { top: insets.top + spacing.xs }]}
       pointerEvents="box-none"
     >
-      <Pressable
-        onPress={() => {
-          onClose();
-          banner.onPress?.();
-        }}
-        style={({ pressed }) => [
+      {/* Open and Dismiss are siblings: a button inside a button is invalid on web. */}
+      <View
+        style={[
           styles.card,
           {
             backgroundColor: colors.card,
             borderColor: colors.cardBorder,
             shadowColor: colors.shadow,
           },
-          pressed && styles.pressed,
         ]}
-        accessibilityRole="button"
         accessibilityLiveRegion="polite"
-        accessibilityLabel={`${banner.title}. ${banner.body}`}
       >
-        <View style={[styles.icon, { backgroundColor: colors.accentSoft }]}>
-          <Ionicons name={banner.icon} size={20} color={colors.accent} />
-        </View>
-        <View style={styles.copy}>
-          <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>
-            {banner.title}
-          </Text>
-          <Text style={[styles.body, { color: colors.muted }]} numberOfLines={2}>
-            {banner.body}
-          </Text>
-        </View>
+        <Pressable
+          onPress={() => {
+            onClose();
+            banner.onPress?.();
+          }}
+          style={({ pressed }) => [styles.open, pressed && styles.pressed]}
+          accessibilityRole="button"
+          accessibilityLabel={`${banner.title}. ${banner.body}`}
+        >
+          <View style={[styles.icon, { backgroundColor: colors.accentSoft }]}>
+            <Ionicons name={banner.icon} size={20} color={colors.accent} />
+          </View>
+          <View style={styles.copy}>
+            <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>
+              {banner.title}
+            </Text>
+            <Text style={[styles.body, { color: colors.muted }]} numberOfLines={2}>
+              {banner.body}
+            </Text>
+          </View>
+        </Pressable>
         <Pressable
           onPress={onClose}
           hitSlop={10}
@@ -125,7 +129,7 @@ function BannerCard({ banner, onClose }: { banner: Banner; onClose: () => void }
         >
           <Ionicons name="close" size={18} color={colors.muted} />
         </Pressable>
-      </Pressable>
+      </View>
     </Animated.View>
   );
 }
@@ -150,6 +154,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 1,
     shadowRadius: 18,
     elevation: 8,
+  },
+  open: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
   },
   pressed: {
     opacity: 0.85,

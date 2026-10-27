@@ -16,6 +16,8 @@ vi.mock("./repository", () => repo);
 vi.mock("./expoPush", () => ({ sendExpoPush }));
 const recordCorrection = vi.fn();
 vi.mock("./inbox", () => ({ recordCorrection }));
+const emitToUsers = vi.fn();
+vi.mock("../messaging/gateway", () => ({ emitToUsers }));
 
 const service = await import("./service");
 const { registerPushTokenSchema } = await import("./schema");
@@ -130,6 +132,24 @@ describe("connection notifications", () => {
       body: "James would like to practise with you.",
       data: { type: "connection_request", userId: "james" },
     });
+    // Open apps (web too) get it live.
+    expect(emitToUsers).toHaveBeenCalledWith(["maria"], "connection_request", {
+      userId: "james",
+      displayName: "James",
+    });
+  });
+
+  it("tells both members live when a request is accepted", async () => {
+    service.notifyConnectionAccepted("james", "maria");
+    await settle();
+    expect(emitToUsers).toHaveBeenCalledWith(["james"], "connection_accepted", {
+      userId: "maria",
+      displayName: "Maria",
+    });
+    expect(emitToUsers).toHaveBeenCalledWith(["maria"], "connection_accepted", {
+      userId: "james",
+      displayName: "James",
+    });
   });
 
   it("notifies both opted-in members after acceptance", async () => {
@@ -152,6 +172,8 @@ describe("connection notifications", () => {
     service.notifyConnectionRequest("james", "maria");
     await settle();
     expect(sendExpoPush).not.toHaveBeenCalled();
+    // The live event still refreshes their Connections; the app hides the banner itself.
+    expect(emitToUsers).toHaveBeenCalledTimes(1);
   });
 });
 

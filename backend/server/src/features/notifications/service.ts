@@ -1,4 +1,12 @@
+import {
+  CONNECTION_EVENTS,
+  PUSH_CHANNELS,
+  type ConnectionEventDto,
+  type PushData,
+} from "@sayly/shared";
+
 import { logger } from "../../shared/utils/logger";
+import { emitToUsers } from "../messaging/gateway";
 import type { ChatMessage, MessageCorrectionDto } from "../messaging/types";
 
 import { recordCorrection } from "./inbox";
@@ -6,7 +14,7 @@ import { sendExpoPush, type PushMessage } from "./expoPush";
 import * as repository from "./repository";
 import type { PushPlatform } from "./types";
 
-type PushContent = Pick<PushMessage, "title" | "body" | "data">;
+type PushContent = Pick<PushMessage, "title" | "body"> & { data: PushData };
 
 const MAX_PREVIEW = 140;
 
@@ -22,9 +30,41 @@ async function pushToUser(userId: string, content: PushContent) {
   const tokens = await repository.pushTokensOf(userId);
   if (tokens.length === 0) return;
   const dead = await sendExpoPush(
-    tokens.map((to) => ({ ...content, to, sound: "default", channelId: "default" })),
+    tokens.map((to) => ({ ...content, to, sound: "default", channelId: PUSH_CHANNELS.default })),
   );
   await repository.deletePushTokens(dead);
+}
+
+/** The evening nudge: the streak ends at midnight unless today gets some practice. */
+export function streakReminderContent(currentStreak: number): Pick<PushMessage, "title" | "body"> {
+  const days = currentStreak === 1 ? "1-day" : `${currentStreak}-day`;
+  return {
+    title: `🔥 Keep your ${days} streak`,
+    body: "Send a message or answer today's icebreaker before midnight.",
+  };
+}
+
+/**
+ * Streak reminders for members the job already claimed (so each gets at most one a day),
+ * sent in Expo's batches of 100. Returns how many devices were addressed.
+ */
+export async function sendStreakReminders(
+  members: { userId: string; currentStreak: number }[],
+): Promise<number> {
+  const streakOf = new Map(members.map((member) => [member.userId, member.currentStreak]));
+  const devices = await repository.pushTokensOfMany([...streakOf.keys()]);
+  const data: PushData = { type: "streak_reminder" };
+  const dead = await sendExpoPush(
+    devices.map(({ userId, token }) => ({
+      ...streakReminderContent(streakOf.get(userId) ?? 1),
+      data,
+      to: token,
+      sound: "default",
+      channelId: PUSH_CHANNELS.reminders,
+    })),
+  );
+  await repository.deletePushTokens(dead);
+  return devices.length;
 }
 
 /** What the lock screen shows for a chat message. */
@@ -76,12 +116,30 @@ export function notifyCorrection(
   })().catch(logFailure("correction notification"));
 }
 
-/** A pending partner request is sent only to a member who opted into connection notifications. */
+/** Live event to the member's open apps (web included); the app applies their preferences. */
+function emitConnectionEvent(
+  toUserId: string,
+  event: (typeof CONNECTION_EVENTS)[keyof typeof CONNECTION_EVENTS],
+  other: ConnectionEventDto,
+) {
+  emitToUsers([toUserId], event, other);
+}
+
+/**
+ * New partner request: a live event to the recipient's open apps, and a push to their phones
+ * when they opted into connection notifications.
+ */
 export function notifyConnectionRequest(requesterId: string, recipientId: string) {
   void (async () => {
-    const prefs = await repository.notificationPreferencesOf(recipientId);
+    const [prefs, requesterName] = await Promise.all([
+      repository.notificationPreferencesOf(recipientId),
+      repository.displayNameOf(requesterId),
+    ]);
+    emitConnectionEvent(recipientId, CONNECTION_EVENTS.request, {
+      userId: requesterId,
+      displayName: requesterName,
+    });
     if (!prefs.notifyConnectionRequests) return;
-    const requesterName = await repository.displayNameOf(requesterId);
     await pushToUser(recipientId, {
       title: "New connection request",
       body: `${requesterName} would like to practise with you.`,
@@ -99,6 +157,14 @@ export function notifyConnectionAccepted(requesterId: string, recipientId: strin
       repository.displayNameOf(requesterId),
       repository.displayNameOf(recipientId),
     ]);
+    emitConnectionEvent(requesterId, CONNECTION_EVENTS.accepted, {
+      userId: recipientId,
+      displayName: recipientName,
+    });
+    emitConnectionEvent(recipientId, CONNECTION_EVENTS.accepted, {
+      userId: requesterId,
+      displayName: requesterName,
+    });
     await Promise.all([
       requesterPrefs.notifyConnectionRequests
         ? pushToUser(requesterId, {

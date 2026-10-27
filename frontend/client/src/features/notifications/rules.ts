@@ -1,10 +1,15 @@
+import type { ConnectionEventDto } from "@sayly/shared";
+
 import type { ChatMessage, MessageCorrectedEvent } from "@/features/chat/types";
 import { lastMessagePreview } from "@/features/chat/utils/messagePreview";
 import type { IconName } from "@/shared/components/SettingRow";
 
 /** Where tapping a notification leads. */
 export type NotificationTarget =
-  { screen: "Conversation"; conversationId: string } | { screen: "PublicProfile"; userId: string };
+  | { screen: "Conversation"; conversationId: string }
+  | { screen: "PublicProfile"; userId: string }
+  | { screen: "Connections" }
+  | { screen: "Community" };
 
 export type BannerContent = {
   key: string;
@@ -62,6 +67,32 @@ export function correctionBanner(
   };
 }
 
+/** Banner for a new partner request (opens your requests) or an accepted one (their profile). */
+export function connectionBanner(
+  kind: "request" | "accepted",
+  other: ConnectionEventDto,
+  prefs: Preferences,
+): BannerContent | null {
+  if (!prefs.notifyConnectionRequests) return null;
+  const name = other.displayName.trim() || "Someone";
+
+  return kind === "request"
+    ? {
+        key: `connection-request-${other.userId}`,
+        icon: "person-add-outline",
+        title: "New connection request",
+        body: `${name} would like to practise with you.`,
+        target: { screen: "Connections" },
+      }
+    : {
+        key: `connection-accepted-${other.userId}`,
+        icon: "people-outline",
+        title: "You're connected",
+        body: `You and ${name} can now chat and call.`,
+        target: { screen: "PublicProfile", userId: other.userId },
+      };
+}
+
 /** Push payload `data` → target (unknown or malformed data opens nothing). */
 export function targetFromPushData(data: unknown): NotificationTarget | null {
   if (!data || typeof data !== "object") return null;
@@ -69,12 +100,16 @@ export function targetFromPushData(data: unknown): NotificationTarget | null {
   if (type === "message" && typeof conversationId === "string" && conversationId) {
     return { screen: "Conversation", conversationId };
   }
-  if (
-    (type === "connection_request" || type === "connection_accepted") &&
-    typeof userId === "string" &&
-    userId
-  ) {
+  // A new request opens your requests, where you can accept it.
+  if (type === "connection_request") {
+    return { screen: "Connections" };
+  }
+  if (type === "connection_accepted" && typeof userId === "string" && userId) {
     return { screen: "PublicProfile", userId };
+  }
+  // Streak reminder: Community has the streak badge and today's icebreaker.
+  if (type === "streak_reminder") {
+    return { screen: "Community" };
   }
   return null;
 }

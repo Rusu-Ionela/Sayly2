@@ -1,9 +1,10 @@
 import type { ChatMessage } from "@/features/chat/types";
 
 import { badgeLabel } from "./useNotificationBadges";
-import { correctionBanner, messageBanner, targetFromPushData } from "./rules";
+import { connectionBanner, correctionBanner, messageBanner, targetFromPushData } from "./rules";
 
 jest.mock("@/features/chat/hooks/useConversations", () => ({ useConversations: jest.fn() }));
+jest.mock("@/features/connections/hooks/useConnections", () => ({ useConnections: jest.fn() }));
 
 const prefs = { notifyMessages: true, notifyConnectionRequests: true };
 
@@ -67,6 +68,28 @@ describe("correction banners", () => {
   });
 });
 
+describe("connection banners", () => {
+  const prefs = { notifyMessages: true, notifyConnectionRequests: true };
+  const james = { userId: "james", displayName: "James" };
+
+  it("opens your requests for a new request and their profile once accepted", () => {
+    expect(connectionBanner("request", james, prefs)).toMatchObject({
+      title: "New connection request",
+      body: "James would like to practise with you.",
+      target: { screen: "Connections" },
+    });
+    expect(connectionBanner("accepted", james, prefs)).toMatchObject({
+      target: { screen: "PublicProfile", userId: "james" },
+    });
+  });
+
+  it("stays quiet when connection notifications are off", () => {
+    expect(
+      connectionBanner("request", james, { ...prefs, notifyConnectionRequests: false }),
+    ).toBeNull();
+  });
+});
+
 describe("push taps", () => {
   it("opens the right screen", () => {
     expect(targetFromPushData({ type: "message", conversationId: "c1" })).toEqual({
@@ -74,14 +97,14 @@ describe("push taps", () => {
       conversationId: "c1",
     });
     expect(targetFromPushData({ type: "connection_request", userId: "james" })).toEqual({
-      screen: "PublicProfile",
-      userId: "james",
+      screen: "Connections",
     });
     expect(targetFromPushData({ type: "connection_accepted", userId: "james" })).toEqual({
       screen: "PublicProfile",
       userId: "james",
     });
-    expect(targetFromPushData({ type: "connection_request" })).toBeNull();
+    expect(targetFromPushData({ type: "streak_reminder" })).toEqual({ screen: "Community" });
+    expect(targetFromPushData({ type: "connection_accepted" })).toBeNull();
     expect(targetFromPushData({ type: "message" })).toBeNull();
     expect(targetFromPushData("nonsense")).toBeNull();
   });

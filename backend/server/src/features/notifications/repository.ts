@@ -42,6 +42,15 @@ export async function pushTokensOf(userId: string): Promise<string[]> {
   return rows.map((row) => row.token);
 }
 
+/** Every device of each member, for one batched send. */
+export async function pushTokensOfMany(userIds: string[]): Promise<{ userId: string; token: string }[]> {
+  if (userIds.length === 0) return [];
+  return db
+    .select({ userId: pushTokens.userId, token: pushTokens.token })
+    .from(pushTokens)
+    .where(inArray(pushTokens.userId, userIds));
+}
+
 export type NotificationPreferences = {
   notifyMessages: boolean;
   notifyConnectionRequests: boolean;

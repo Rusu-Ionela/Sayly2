@@ -8,7 +8,7 @@ export function unregisterPushToken(token: string) {
   return apiClient.delete<void>(`/notifications/push-tokens/${encodeURIComponent(token)}`);
 }
 
-export type InboxType = "CORRECTION" | "REFERENCE";
+type InboxType = "CORRECTION" | "REFERENCE";
 
 export type InboxItem = {
   id: string;

@@ -1,3 +1,4 @@
+import { CONNECTION_EVENTS, type ConnectionEventDto } from "@sayly/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 
@@ -10,14 +11,15 @@ import { currentRoute } from "@/navigation/navigationRef";
 
 import { useInAppBanner } from "./InAppBanner";
 import { openNotificationTarget } from "./openTarget";
-import { correctionBanner, messageBanner, type BannerContent } from "./rules";
+import { connectionBanner, correctionBanner, messageBanner, type BannerContent } from "./rules";
 
 type ConversationsCache = { pages: { items: Conversation[] }[] };
 
 const DEFAULT_PREFS = { notifyMessages: true, notifyConnectionRequests: true };
 
 /**
- * Shows in-app banners for new chat messages and corrections of your messages.
+ * Shows in-app banners for new chat messages, corrections of your messages and partner
+ * requests (the only live signal on web, where push does not exist).
  */
 export function useRealtimeNotifications() {
   const { socket, isConnected } = useSocketContext();
@@ -73,11 +75,23 @@ export function useRealtimeNotifications() {
       );
     };
 
+    const onConnection = (kind: "request" | "accepted") => (other: ConnectionEventDto) => {
+      // Refresh requests, the profile's Connections badge and that member's Connect button.
+      void queryClient.invalidateQueries({ queryKey: queryKeys.connections.all });
+      present(connectionBanner(kind, other, prefs()));
+    };
+    const onConnectionRequest = onConnection("request");
+    const onConnectionAccepted = onConnection("accepted");
+
     socket.on("message_new", onMessage);
     socket.on("message_corrected", onCorrected);
+    socket.on(CONNECTION_EVENTS.request, onConnectionRequest);
+    socket.on(CONNECTION_EVENTS.accepted, onConnectionAccepted);
     return () => {
       socket.off("message_new", onMessage);
       socket.off("message_corrected", onCorrected);
+      socket.off(CONNECTION_EVENTS.request, onConnectionRequest);
+      socket.off(CONNECTION_EVENTS.accepted, onConnectionAccepted);
     };
   }, [socket, isConnected, queryClient, show, userId]);
 }
