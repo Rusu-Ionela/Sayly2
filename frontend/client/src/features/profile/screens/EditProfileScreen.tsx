@@ -17,7 +17,7 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 import { LanguageLevelList } from "@/features/onboarding/components/LanguageLevelList";
 import { CountryPicker } from "@/features/onboarding/components/CountryPicker";
-import { MAX_LEARNING_LANGUAGES, MAX_SPOKEN_LANGUAGES, useLanguages } from "@/features/languages";
+import { useLanguages } from "@/features/languages";
 import type { ProficiencyLevel, UserLanguageSelection } from "@/features/languages/types";
 import type { AppStackParamList } from "@/navigation/types";
 import { Screen } from "@/shared/components/Screen";
@@ -34,12 +34,21 @@ import { PhotoGallery } from "../components/PhotoGallery";
 import { ProfileHeader } from "../components/ProfileHeader";
 import { ProfileSkeleton } from "../components/ProfileSkeleton";
 import { TextField } from "@/shared/components/TextField";
+import { confirmAction } from "@/shared/utils/confirmAction";
+import {
+  MAX_CERTIFICATES,
+  MAX_LEARNING_LANGUAGES,
+  MAX_SPOKEN_LANGUAGES,
+  MAX_TOPICS,
+  PRACTICE_GOALS,
+  type PracticeGoal,
+  type Topic,
+  TOPICS,
+} from "@sayly/shared";
 import { TagList } from "../components/TagList";
 import { useProfile, useUpdateProfile } from "../hooks/useProfile";
 import { profileAvatarUrl } from "../model/avatar";
 import { certificateFormRows, toCertificateFormValues } from "../model/certificates";
-import { PRACTICE_GOALS, type PracticeGoal } from "../model/practiceGoals";
-import { MAX_CERTIFICATES, MAX_TOPICS, TOPICS, type Topic } from "../model/profileLimits";
 import { toLanguageDtos } from "../model/profilePatch";
 import { buildProfilePayload } from "../model/profilePayload";
 import {
@@ -205,18 +214,17 @@ export function EditProfileScreen() {
       leaveScreen();
       return;
     }
-    Alert.alert("Discard changes?", "You have unsaved edits. Leave without saving?", [
-      { text: "Keep editing", style: "cancel" },
-      {
-        text: "Discard",
-        style: "destructive",
-        onPress: () => {
-          // Clear dirty state first so navigation is clean.
-          reset(initialValues);
-          leaveScreen();
-        },
+    confirmAction({
+      title: "Discard changes?",
+      message: "You have unsaved edits. Leave without saving?",
+      confirmLabel: "Discard",
+      cancelLabel: "Keep editing",
+      onConfirm: () => {
+        // Clear dirty state first so navigation is clean.
+        reset(initialValues);
+        leaveScreen();
       },
-    ]);
+    });
   }, [initialValues, isDirty, leaveScreen, reset]);
 
   // Avoid usePreventRemove / beforeRemove — native-stack desyncs on Discard.

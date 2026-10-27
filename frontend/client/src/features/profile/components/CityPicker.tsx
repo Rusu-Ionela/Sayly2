@@ -2,8 +2,8 @@ import { useMemo, useState } from "react";
 import { StyleSheet, Text } from "react-native";
 
 import { SearchablePicker, type PickerItem } from "@/shared/components/SearchablePicker";
-import { findCountry } from "@/shared/data/countries";
 import { useColors } from "@/shared/theme";
+import { findCountry } from "@sayly/shared";
 
 import { useCitySearch } from "../hooks/useCitySearch";
 

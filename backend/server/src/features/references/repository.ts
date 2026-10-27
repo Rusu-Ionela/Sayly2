@@ -1,4 +1,12 @@
 import { and, count, desc, eq, gte, inArray, sql } from "drizzle-orm";
+import {
+  type MyReferenceDto,
+  POSITIVE_RATING,
+  type ReferenceDto,
+  REFERENCES_PAGE_SIZE,
+  type ReferenceSummaryDto,
+  type SaveReferenceInput,
+} from "@sayly/shared";
 
 import { db } from "../../db/client";
 import { messages, profiles, references, users } from "../../db/schema";
@@ -6,14 +14,6 @@ import { resignMediaUrl } from "../media/storage";
 import { findDirectConversationId } from "../messaging/repository";
 import { notBlockedBetween } from "../safety/blockFilter";
 
-import {
-  POSITIVE_RATING,
-  REFERENCES_PAGE_SIZE,
-  type MyReferenceDto,
-  type ReferenceDto,
-  type ReferenceSummaryDto,
-  type SaveReferenceInput,
-} from "./types";
 
 const OWN_COLUMNS = {
   id: references.id,

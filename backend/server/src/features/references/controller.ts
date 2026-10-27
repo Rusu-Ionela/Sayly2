@@ -1,9 +1,10 @@
 import type { Request, Response } from "express";
+import { saveReferenceSchema } from "@sayly/shared";
 
 import { requireUserId } from "../../shared/middleware/requireUserId";
 import { recordReference } from "../notifications";
 
-import { referencesPageQuerySchema, saveReferenceSchema, userIdParamSchema } from "./schema";
+import { referencesPageQuerySchema, userIdParamSchema } from "./schema";
 import * as referencesService from "./service";
 
 /** GET /users/:userId/references — summary, newest first, and whether you can write one. */

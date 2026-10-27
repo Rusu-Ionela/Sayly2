@@ -1,13 +1,13 @@
 import { Ionicons } from "@expo/vector-icons";
 import { StyleSheet, Text, View } from "react-native";
 
-import type { ReferenceSummary } from "@/features/profile/types";
 import { useColors } from "@/shared/theme";
+import type { ReferenceSummaryDto } from "@sayly/shared";
 
 import { describeReferences } from "../model/referenceSummary";
 
 /** One line under a profile's header: "★ 12 references · 11 positive" or "No references yet". */
-export function ReferenceSummaryLine({ summary }: { summary: ReferenceSummary | undefined }) {
+export function ReferenceSummaryLine({ summary }: { summary: ReferenceSummaryDto | undefined }) {
   const colors = useColors();
   const hasAny = Boolean(summary?.total);
 

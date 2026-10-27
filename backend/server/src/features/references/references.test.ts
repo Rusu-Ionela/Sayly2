@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import request from "supertest";
+import { REFERENCE_BODY_MAX, saveReferenceSchema } from "@sayly/shared";
 
 vi.mock("../../shared/middleware/authenticate", () => import("../../test/authMock"));
 vi.mock("../../infra/limiter/middleware", async (importOriginal) => ({
@@ -25,8 +26,6 @@ import { TEST_VIEWER_ID } from "../../test/authMock";
 import { AppError } from "../../shared/errors/AppError";
 import { assertVisibleMember } from "../users/memberSummary";
 import * as referencesRepository from "./repository";
-import { saveReferenceSchema } from "./schema";
-import { REFERENCE_BODY_MAX } from "./types";
 
 const repo = vi.mocked(referencesRepository);
 const visible = vi.mocked(assertVisibleMember);

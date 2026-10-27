@@ -1,7 +1,7 @@
 import { asc, desc, eq } from "drizzle-orm";
 
 import { db } from "../../db/client";
-import { blocks, follows, messages, users } from "../../db/schema";
+import { blocks, follows, icebreakerAnswers, messages, userStreaks, users } from "../../db/schema";
 import { listSavedPhrases } from "../messaging/learning";
 import { listReferencesWrittenBy } from "../references";
 import { listSupportTickets } from "../support";
@@ -17,7 +17,18 @@ const MAX_EXPORTED_MESSAGES = 5_000;
  * JSON document. Other members' data (their messages, profiles) is never included.
  */
 export async function buildDataExport(userId: string, profile: CurrentUserDto) {
-  const [account, topics, phrases, following, blocked, sent, supportTickets, referencesWritten] = await Promise.all([
+  const [
+    account,
+    topics,
+    phrases,
+    following,
+    blocked,
+    sent,
+    supportTickets,
+    referencesWritten,
+    streak,
+    icebreakers,
+  ] = await Promise.all([
     db.query.users.findFirst({
       where: eq(users.id, userId),
       columns: { createdAt: true, authProvider: true, lastSeenAt: true },
@@ -49,6 +60,20 @@ export async function buildDataExport(userId: string, profile: CurrentUserDto) {
       .limit(MAX_EXPORTED_MESSAGES),
     listSupportTickets(userId),
     listReferencesWrittenBy(userId),
+    db.query.userStreaks.findFirst({
+      where: eq(userStreaks.userId, userId),
+      columns: { currentStreak: true, longestStreak: true, lastActiveDate: true, timezone: true },
+    }),
+    db
+      .select({
+        languageId: icebreakerAnswers.languageId,
+        promptDate: icebreakerAnswers.promptDate,
+        promptId: icebreakerAnswers.promptId,
+        body: icebreakerAnswers.body,
+      })
+      .from(icebreakerAnswers)
+      .where(eq(icebreakerAnswers.userId, userId))
+      .orderBy(desc(icebreakerAnswers.promptDate)),
   ]);
 
   const { stats: _stats, ...profileData } = profile;
@@ -66,6 +91,8 @@ export async function buildDataExport(userId: string, profile: CurrentUserDto) {
     following: following.map((row) => ({ userId: row.userId, since: row.since.toISOString() })),
     blockedUsers: blocked.map((row) => ({ userId: row.userId, since: row.since.toISOString() })),
     supportTickets,
+    streak: streak ?? null,
+    icebreakerAnswers: icebreakers,
     referencesWritten: referencesWritten.map((row) => ({
       ...row,
       createdAt: row.createdAt.toISOString(),

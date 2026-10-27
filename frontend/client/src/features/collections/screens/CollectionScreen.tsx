@@ -1,6 +1,7 @@
+import { FlashList } from "@shopify/flash-list";
 import { Ionicons } from "@expo/vector-icons";
 import { useMemo, useState } from "react";
-import { Alert, FlatList, Pressable, Share, StyleSheet, View } from "react-native";
+import { Alert, Pressable, Share, StyleSheet, View } from "react-native";
 
 import { useLanguages } from "@/features/languages";
 import { languageFlag } from "@/features/languages/utils";
@@ -151,7 +152,7 @@ export function CollectionScreen() {
       onAction={() => void phrasesQuery.refetch()}
     />
   ) : (
-    <FlatList
+    <FlashList
       data={phrases}
       keyExtractor={(item) => item.id}
       renderItem={renderSaved}
@@ -208,7 +209,7 @@ export function CollectionScreen() {
           onAction={() => void expressionsQuery.refetch()}
         />
       ) : (
-        <FlatList
+        <FlashList
           data={expressions.items}
           keyExtractor={(item) => item.id}
           renderItem={renderExpression}

@@ -1,6 +1,6 @@
 import type { ProficiencyLevel } from "@/features/languages/types";
-import type { CefrLevel } from "@/features/profile/model/profileLimits";
 import type { IconName } from "@/shared/components/SettingRow";
+import type { CefrLevel } from "@sayly/shared";
 
 import type { Price } from "../api/certificatesApi";
 

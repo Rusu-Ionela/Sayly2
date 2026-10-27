@@ -7,6 +7,8 @@ import type { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 import { recommendedTestLevel } from "@/features/certificates/model/certificateContent";
+import { useConnections } from "@/features/connections/hooks/useConnections";
+import { useStreak } from "@/features/streaks";
 import { NotificationsBell } from "@/features/notifications";
 import { ReferencesSection } from "@/features/references";
 import { PROFILE_SECTIONS, SettingsSections } from "@/features/settings";
@@ -16,6 +18,7 @@ import { useFloatingTabBarPadding } from "@/navigation/floatingTabBar";
 import { ActionSheet } from "@/shared/components/ActionSheet";
 import { AppRefreshControl } from "@/shared/components/AppRefreshControl";
 import { Avatar } from "@/shared/components/Avatar";
+import { EmptyStateCard } from "@/shared/components/EmptyStateCard";
 import { PressableScale } from "@/shared/components/PressableScale";
 import { ProBadge } from "@/shared/components/ProBadge";
 import { Screen } from "@/shared/components/Screen";
@@ -26,19 +29,19 @@ import { useColors } from "@/shared/theme";
 import { radius } from "@/shared/theme/radius";
 import { spacing } from "@/shared/theme/spacing";
 import { getTypography } from "@/shared/theme/typography";
+import { PRACTICE_GOALS, TOPICS } from "@sayly/shared";
 
 import { PhotoGallery } from "../components/PhotoGallery";
 import { ProfileHeader } from "../components/ProfileHeader";
 import { ProfileSkeleton } from "../components/ProfileSkeleton";
+import { ProfileStatsRow, type ProfileStat } from "../components/ProfileStatsRow";
 import { PromoCarousel, type PromoCard } from "../components/PromoCarousel";
 import { QuickAction } from "../components/QuickAction";
 import { TagList } from "../components/TagList";
 import { useProfile, useUpdateSettings } from "../hooks/useProfile";
 import { useShareProfile } from "../hooks/useShareProfile";
 import { profileAvatarUrl } from "../model/avatar";
-import { PRACTICE_GOALS } from "../model/practiceGoals";
 import { buildProfileMenu, type ProfileMenuRoute } from "../model/profileMenu";
-import { TOPICS } from "../model/profileLimits";
 import type { CurrentUserProfile } from "../types";
 
 type ProfileNav = CompositeNavigationProp<
@@ -95,7 +98,22 @@ export function ProfileScreen() {
   const profile = profileQuery.data;
   const shareProfile = useShareProfile(profile);
 
-  const menu = useMemo(() => (profile ? buildProfileMenu(profile) : []), [profile]);
+  const connections = useConnections();
+  const incomingRequests = connections.data?.incoming.length ?? 0;
+  const partnerCount = connections.data?.accepted.length ?? null;
+  const streak = useStreak().data;
+  const menu = useMemo(
+    () => (profile ? buildProfileMenu(profile, incomingRequests) : []),
+    [profile, incomingRequests],
+  );
+  const stats = useMemo<ProfileStat[]>(
+    () => [
+      { key: "streak", emoji: "🔥", value: streak?.current ?? null, label: "Day streak" },
+      { key: "best", emoji: "🏆", value: streak?.longest ?? null, label: "Best streak" },
+      { key: "partners", emoji: "🤝", value: partnerCount, label: "Partners" },
+    ],
+    [streak, partnerCount],
+  );
   const promos = useMemo(
     () => (profile ? promoCards(profile, navigation) : []),
     [profile, navigation],
@@ -207,8 +225,15 @@ export function ProfileScreen() {
               </View>
             </PressableScale>
           }
+          stats={<ProfileStatsRow stats={stats} />}
           actions={
-            <QuickAction icon="create-outline" label="Edit profile" onPress={editProfile} primary />
+            <QuickAction
+              icon="create-outline"
+              label="Edit profile"
+              onPress={editProfile}
+              primary
+              compact
+            />
           }
         />
 
@@ -244,21 +269,22 @@ export function ProfileScreen() {
               {profile.photos.length ? <PhotoGallery photos={profile.photos} /> : null}
             </>
           ) : (
-            <PressableScale
-              onPress={editProfile}
-              accessibilityRole="button"
-              accessibilityLabel="Add about me"
-            >
-              <Text style={[type.body, { color: colors.muted }]}>
-                Tell partners about yourself, your interests and learning goals.{" "}
-                <Text style={[styles.cta, { color: colors.accent }]}>Add now</Text>
-              </Text>
-            </PressableScale>
+            <EmptyStateCard
+              icon="sparkles"
+              title="Make a great first impression"
+              body="Partners reply more when they know you. Add a short bio, your interests and learning goals."
+              action={{ label: "Add about me", onPress: editProfile }}
+            />
           )}
         </SectionCard>
 
         {/* Same section everyone sees on your public profile. */}
-        <ReferencesSection userId={profile.id} name={profile.displayName} isSelf />
+        <ReferencesSection
+          userId={profile.id}
+          name={profile.displayName}
+          isSelf
+          onEmptyAction={() => navigation.navigate("Community")}
+        />
 
         <SectionCard
           footer={

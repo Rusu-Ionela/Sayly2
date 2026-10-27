@@ -1,12 +1,14 @@
 import { useMemo, useState } from "react";
-import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { Avatar } from "@/shared/components/Avatar";
+import { EmptyStateCard } from "@/shared/components/EmptyStateCard";
 import { SectionCard } from "@/shared/components/SectionCard";
 import { Skeleton } from "@/shared/components/Skeleton";
 import { useColors } from "@/shared/theme";
 import { radius } from "@/shared/theme/radius";
 import { spacing } from "@/shared/theme/spacing";
+import { confirmAction } from "@/shared/utils/confirmAction";
 
 import { useReferenceMutations, useReferences } from "../hooks/useReferences";
 import { describeReferences, referenceErrorMessage } from "../model/referenceSummary";
@@ -19,10 +21,17 @@ type ReferencesSectionProps = {
   name: string;
   /** Your own profile: no write button, and "you" in the empty state. */
   isSelf?: boolean;
+  /** Own profile, no references yet: where "Find partners" leads. */
+  onEmptyAction?: () => void;
 };
 
 /** A member's references with their summary, and the viewer's own reference editor. */
-export function ReferencesSection({ userId, name, isSelf = false }: ReferencesSectionProps) {
+export function ReferencesSection({
+  userId,
+  name,
+  isSelf = false,
+  onEmptyAction,
+}: ReferencesSectionProps) {
   const colors = useColors();
   const references = useReferences(userId);
   const { save, remove } = useReferenceMutations(userId);
@@ -42,23 +51,17 @@ export function ReferencesSection({ userId, name, isSelf = false }: ReferencesSe
   };
 
   const confirmDelete = () =>
-    Alert.alert("Delete your reference?", "It will disappear from their profile.", [
-      { text: "Keep", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: () =>
-          remove.mutate(undefined, {
-            onSuccess: close,
-            onError: (err) =>
-              setError(referenceErrorMessage(err, "Could not delete. Please try again.")),
-          }),
-      },
-    ]);
-
-  const emptyText = isSelf
-    ? "You don't have any references yet. Partners can leave one after you've chatted."
-    : `${name} doesn't have any references yet.`;
+    confirmAction({
+      title: "Delete your reference?",
+      message: "It will disappear from their profile.",
+      confirmLabel: "Delete",
+      onConfirm: () =>
+        remove.mutate(undefined, {
+          onSuccess: close,
+          onError: (err) =>
+            setError(referenceErrorMessage(err, "Could not delete. Please try again.")),
+        }),
+    });
 
   return (
     <SectionCard
@@ -76,7 +79,20 @@ export function ReferencesSection({ userId, name, isSelf = false }: ReferencesSe
           </Text>
         </Pressable>
       ) : items.length === 0 ? (
-        <Text style={[styles.empty, { color: colors.muted }]}>{emptyText}</Text>
+        <EmptyStateCard
+          icon="ribbon-outline"
+          title={isSelf ? "No references yet" : `${name} has no references yet`}
+          body={
+            isSelf
+              ? "Partners can leave you one after you've chatted. Start a conversation to earn your first."
+              : "Chat together and you can be the first to leave one."
+          }
+          action={
+            isSelf && onEmptyAction
+              ? { label: "Find partners", icon: "search", onPress: onEmptyAction }
+              : undefined
+          }
+        />
       ) : (
         items.map((item) => (
           <View key={item.id} style={[styles.card, { backgroundColor: colors.surface }]}>
@@ -146,7 +162,6 @@ export function ReferencesSection({ userId, name, isSelf = false }: ReferencesSe
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  empty: { fontSize: 15, lineHeight: 21 },
   link: { fontWeight: "600" },
   card: { borderRadius: radius.lg, padding: spacing.md, gap: spacing.sm },
   author: { flexDirection: "row", alignItems: "center", gap: 10 },

@@ -19,6 +19,7 @@ import { useColors } from "@/shared/theme";
 import { radius } from "@/shared/theme/radius";
 import { spacing } from "@/shared/theme/spacing";
 import { getTypography } from "@/shared/theme/typography";
+import { PRACTICE_GOALS, TOPICS } from "@sayly/shared";
 
 import { CertificateList } from "../components/CertificateList";
 import { LanguageChips } from "../components/LanguageChips";
@@ -33,8 +34,6 @@ import { TranslatableCard } from "../components/TranslatableCard";
 import { useProfile, usePublicProfile } from "../hooks/useProfile";
 import { profileAvatarUrl } from "../model/avatar";
 import { certificateRows } from "../model/certificates";
-import { PRACTICE_GOALS } from "../model/practiceGoals";
-import { TOPICS } from "../model/profileLimits";
 import type { CurrentUserProfile, PublicUserProfile } from "../types";
 
 type PublicProfileRoute = RouteProp<AppStackParamList, "PublicProfile" | "UserPreview">;

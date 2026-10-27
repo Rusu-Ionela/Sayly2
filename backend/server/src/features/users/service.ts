@@ -114,7 +114,7 @@ export async function translateProfileField(
   if (!text) {
     throw new AppError("Nothing to translate", 400, "VALIDATION_ERROR");
   }
-  return translateProfileText(viewerId, text);
+  return translateProfileText(viewerId, targetUserId, text);
 }
 
 /** PRO-001 — safe public profile. */

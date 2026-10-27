@@ -13,6 +13,8 @@ type QuickActionProps = {
   onPress: () => void;
   /** The main action is filled; the others are outlined. */
   primary?: boolean;
+  /** Content-sized pill instead of filling the row. */
+  compact?: boolean;
 };
 
 /** Compact action button for the profile header (Edit profile, Preview…). */
@@ -21,6 +23,7 @@ export const QuickAction = memo(function QuickAction({
   label,
   onPress,
   primary,
+  compact,
 }: QuickActionProps) {
   const colors = useColors();
   const foreground = primary ? colors.onPrimary : colors.accent;
@@ -30,14 +33,17 @@ export const QuickAction = memo(function QuickAction({
       onPress={onPress}
       style={[
         styles.button,
+        compact && styles.compact,
         primary
           ? { backgroundColor: colors.accent, borderColor: colors.accent }
           : { backgroundColor: colors.accentSoft, borderColor: colors.accentSoft },
       ]}
+      // Keeps the touch target at 44pt for the shorter compact pill.
+      hitSlop={compact ? 4 : undefined}
       accessibilityRole="button"
       accessibilityLabel={label}
     >
-      <Ionicons name={icon} size={16} color={foreground} />
+      <Ionicons name={icon} size={compact ? 15 : 16} color={foreground} />
       <Text style={[styles.label, { color: foreground }]}>{label}</Text>
     </PressableScale>
   );
@@ -54,6 +60,12 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     borderWidth: 1,
     paddingHorizontal: 12,
+  },
+  compact: {
+    flex: 0,
+    minHeight: 36,
+    paddingHorizontal: 18,
+    borderRadius: radius.pill,
   },
   label: {
     fontSize: 14,

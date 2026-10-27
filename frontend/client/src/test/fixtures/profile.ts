@@ -37,6 +37,7 @@ export const testProfile: CurrentUserProfile = {
     notifyMessages: true,
     notifyConnectionRequests: true,
     notifyGroupActivity: true,
+    notifyStreakReminders: true,
   },
   stats: { savedPhrases: 0, groups: 0, following: 0, newVisitors: 0 },
   isPro: false,

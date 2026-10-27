@@ -1,9 +1,9 @@
 import { z } from "zod";
+import { normalizeCountryInput } from "@sayly/shared";
 
 import { env } from "../../config/env";
 import { logger } from "../../shared/utils/logger";
 
-import { normalizeCountryInput } from "./countries";
 
 export type Coordinates = { latitude: number; longitude: number };
 

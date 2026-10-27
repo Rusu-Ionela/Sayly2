@@ -10,7 +10,9 @@ import {
   mediaAssets,
   messages,
   profiles,
+  stories,
   users,
+  voiceSparks,
 } from "../../db/schema";
 import { env } from "../../config/env";
 import { AppError } from "../../shared/errors/AppError";
@@ -76,7 +78,7 @@ async function reclaimUnusedMedia(
   const pattern = `^/media/files/(${keys.join("|")})(\\?|$)`;
   const stablePaths = keys.map(stableFilePath);
 
-  const [messageRefs, profileRefs, userRefs] = await Promise.all([
+  const [messageRefs, profileRefs, userRefs, sparkRefs, storyRefs] = await Promise.all([
     tx
       .select({ content: messages.content, thumbnailUrl: messages.thumbnailUrl })
       .from(messages)
@@ -91,6 +93,8 @@ async function reclaimUnusedMedia(
         ),
       ),
     tx.select({ photo: users.photoUrl }).from(users).where(sql`${users.photoUrl} ~ ${pattern}`),
+    tx.select({ audio: voiceSparks.audioUrl }).from(voiceSparks).where(inArray(voiceSparks.audioUrl, stablePaths)),
+    tx.select({ media: stories.mediaUrl }).from(stories).where(inArray(stories.mediaUrl, stablePaths)),
   ]);
 
   const used = new Set<string>();
@@ -98,6 +102,8 @@ async function reclaimUnusedMedia(
     ...messageRefs.flatMap((row) => [row.content, row.thumbnailUrl]),
     ...profileRefs.flatMap((row) => [row.image, ...row.photos]),
     ...userRefs.map((row) => row.photo),
+    ...sparkRefs.map((row) => row.audio),
+    ...storyRefs.map((row) => row.media),
   ]) {
     const key = extractStorageKey(url);
     if (key) used.add(key);
@@ -109,6 +115,27 @@ async function reclaimUnusedMedia(
   }
   await tx.delete(mediaAssets).where(inArray(mediaAssets.id, unused.map((asset) => asset.id)));
   return unused.map((asset) => asset.storageKey);
+}
+
+/** Frees the owner's uploads nothing points to any more (e.g. the media of expired Voice Sparks and stories). */
+export async function reclaimOwnerMedia(ownerId: string) {
+  const keys = await db.transaction(async (tx) => {
+    await lockUser(tx, ownerId);
+    return reclaimUnusedMedia(tx, ownerId);
+  });
+  await Promise.all(keys.map((key) => unlink(path.join(UPLOADS_DIR, key)).catch(() => undefined)));
+}
+
+/** An upload the member owns, by any URL form of it (stable or signed), or null. */
+export async function findOwnedAsset(ownerId: string, fileUrl: string) {
+  const key = extractStorageKey(fileUrl);
+  if (!key) return null;
+  const [asset] = await db
+    .select({ storageKey: mediaAssets.storageKey, mimeType: mediaAssets.mimeType, size: mediaAssets.size })
+    .from(mediaAssets)
+    .where(and(eq(mediaAssets.ownerId, ownerId), eq(mediaAssets.storageKey, key)))
+    .limit(1);
+  return asset ?? null;
 }
 
 /** For account deletion: removes every upload no message still shows (avatar, gallery, strays). */

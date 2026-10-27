@@ -1,25 +1,10 @@
 import type { UserLanguageDto, UserLanguageSelection } from "@/features/languages/types";
+import type { CefrLevel, ReferenceSummaryDto, UserSettingsDto } from "@sayly/shared";
 
 import type { LearningPreferences } from "./model/learningPreferences";
-import type { CefrLevel } from "./model/profileLimits";
 
 /** Privacy + notification toggles (`settings` block of GET /users/me). */
-export type UserSettings = {
-  /** Listed in Discover. */
-  discoverable: boolean;
-  showOnlineStatus: boolean;
-  /** When false, country and city are hidden from other users. */
-  showLocation: boolean;
-  notifyMessages: boolean;
-  notifyConnectionRequests: boolean;
-  notifyGroupActivity: boolean;
-  /** When off, shared Sayly ID links to your profile stop working. */
-  showSaylyId: boolean;
-  /** When off, certificates are hidden on your public profile. */
-  showCertificates: boolean;
-  /** Language code chat translations default to; null = your native language. */
-  translateTo: string | null;
-};
+type UserSettings = UserSettingsDto;
 
 /** The on/off settings (every key whose value is a boolean). */
 export type ToggleSettingKey = {
@@ -45,8 +30,6 @@ export type CertificateInput = Pick<Certificate, "languageId" | "level" | "title
 };
 
 /** Same shape as the backend ReferenceSummaryDto. */
-export type ReferenceSummary = { total: number; positive: number };
-
 type ProfileStats = {
   savedPhrases: number;
   groups: number;
@@ -56,7 +39,7 @@ type ProfileStats = {
 };
 
 /** City-level position (about 1 km precision) used for the profile map. */
-export type ProfileLocation = { latitude: number; longitude: number };
+type ProfileLocation = { latitude: number; longitude: number };
 
 export type OnlineStatus = "ONLINE" | "OFFLINE" | "UNKNOWN";
 
@@ -71,7 +54,7 @@ type ProfileShowcase = {
   /** Main conversation topic, if set. */
   mainTopic: string | null;
   /** References from language partners — shown even when there are none. */
-  references: ReferenceSummary;
+  references: ReferenceSummaryDto;
   learningPreferences: LearningPreferences;
 };
 

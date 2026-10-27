@@ -1,7 +1,8 @@
 import * as ImagePicker from "expo-image-picker";
 import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
+import { MAX_AVATAR_BYTES } from "@sayly/shared";
 
-import { MAX_AVATAR_BYTES, base64ByteLength } from "./avatar";
+import { base64ByteLength } from "./avatar";
 
 /** Tried in order until the encoded image fits under MAX_AVATAR_BYTES. */
 const JPEG_QUALITIES = [0.8, 0.6, 0.4];

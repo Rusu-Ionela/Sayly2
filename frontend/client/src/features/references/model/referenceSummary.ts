@@ -1,10 +1,8 @@
-import type { ReferenceSummary } from "@/features/profile/types";
 import { isApiError } from "@/lib/api/errors";
-
-export const RATING_MAX = 5;
+import type { ReferenceSummaryDto } from "@sayly/shared";
 
 /** "No references yet" · "1 reference · 1 positive" · "12 references · 11 positive". */
-export function describeReferences(summary: ReferenceSummary | undefined): string {
+export function describeReferences(summary: ReferenceSummaryDto | undefined): string {
   if (!summary || summary.total === 0) {
     return "No references yet";
   }

@@ -1,6 +1,4 @@
-/** Same bounds as the server: members are 18–120 years old. */
-export const MIN_AGE = 18;
-export const MAX_AGE = 120;
+import { MAX_AGE, MIN_AGE } from "@sayly/shared";
 
 function pad(value: number) {
   return String(value).padStart(2, "0");

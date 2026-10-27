@@ -54,6 +54,7 @@ describe("about fields in serializers", () => {
           notifyMessages: true,
           notifyConnectionRequests: true,
           notifyGroupActivity: true,
+        notifyStreakReminders: true,
           showSaylyId: true,
           showCertificates: true,
           translateTo: null,

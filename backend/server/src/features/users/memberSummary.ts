@@ -7,6 +7,7 @@ import { resignMediaUrl } from "../media/storage";
 import { getPresenceMany } from "../messaging/presence";
 import { isBlockedEitherWay } from "../safety/repository";
 
+import { hasProAccess } from "./pro";
 import { visibleLocation } from "./settings";
 import type { OnlineStatus } from "./types";
 
@@ -40,7 +41,7 @@ export async function loadMemberSummaries(userIds: string[]): Promise<Map<string
 
   const rows = await db.query.users.findMany({
     where: and(inArray(users.id, ids), eq(users.status, "ACTIVE"), eq(users.onboardingCompleted, true)),
-    columns: { id: true, isPro: true, lastSeenAt: true },
+    columns: { id: true, isPro: true, proUntil: true, lastSeenAt: true },
     with: {
       profile: { columns: { displayName: true, country: true, city: true, profileImageUrl: true } },
       settings: { columns: { showLocation: true } },
@@ -72,7 +73,7 @@ export async function loadMemberSummaries(userIds: string[]): Promise<Map<string
       avatarUrl: avatar ? (resignMediaUrl(avatar) ?? avatar) : null,
       country: location.country,
       city: location.city,
-      isPro: row.isPro,
+      isPro: hasProAccess(row),
       nativeLanguage: native ? native.language : null,
       learningLanguage: learning ? learning.language : null,
       onlineStatus: snapshot?.onlineStatus ?? "UNKNOWN",

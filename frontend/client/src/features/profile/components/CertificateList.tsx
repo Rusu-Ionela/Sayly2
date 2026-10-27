@@ -5,8 +5,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useColors } from "@/shared/theme";
 import { radius } from "@/shared/theme/radius";
 import { spacing } from "@/shared/theme/spacing";
-
-import type { CefrLevel } from "../model/profileLimits";
+import type { CefrLevel } from "@sayly/shared";
 
 /** Display shape shared by saved certificates and form entries (resolved names). */
 export type CertificateRowData = {

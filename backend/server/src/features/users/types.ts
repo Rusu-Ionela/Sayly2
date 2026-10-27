@@ -1,12 +1,16 @@
+import type {
+  PracticeGoal,
+  ReferenceSummaryDto,
+  Topic,
+  UpdateSettingsInput,
+  UserSettingsDto,
+} from "@sayly/shared";
 import type { CefrLevel, ProficiencyLevel, UserLanguageType } from "../../db/schema";
 
 import type { SyncUserLanguagesInput } from "../languages/types";
-import type { ReferenceSummaryDto } from "../references/types";
 
 import type { AvatarInput } from "./avatar";
 import type { LearningPreferencesDto, LearningPreferencesInput } from "./learningPreferences";
-import type { PracticeGoal } from "./practiceGoals";
-import type { Topic } from "./topics";
 
 export type UserLanguageDto = {
   languageId: string;
@@ -17,24 +21,7 @@ export type UserLanguageDto = {
 };
 
 /** PATCH /users/me/settings keys — also the `settings` block of GET /users/me. */
-export type UserSettingsDto = {
-  /** Listed in Discover (stored on Profile, edited only through settings). */
-  discoverable: boolean;
-  showOnlineStatus: boolean;
-  /** When false, country and city are hidden from other users. */
-  showLocation: boolean;
-  notifyMessages: boolean;
-  notifyConnectionRequests: boolean;
-  notifyGroupActivity: boolean;
-  /** When false, shared Sayly ID links to this profile stop working. */
-  showSaylyId: boolean;
-  /** When false, certificates are hidden on the public profile. */
-  showCertificates: boolean;
-  /** Language code chat translations default to; null = your native language. */
-  translateTo: string | null;
-};
-
-export type UpdateSettingsInput = Partial<UserSettingsDto>;
+export type { UpdateSettingsInput, UserSettingsDto };
 
 /** Self-reported language certificate. */
 export type CertificateDto = {

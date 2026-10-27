@@ -1,9 +1,9 @@
+import type { MyReferenceDto, ReferencesPageDto, SaveReferenceInput } from "@sayly/shared";
 import { AppError } from "../../shared/errors/AppError";
 import { logger } from "../../shared/utils/logger";
 import { assertVisibleMember } from "../users/memberSummary";
 
 import * as referencesRepository from "./repository";
-import type { MyReferenceDto, ReferencesPageDto, SaveReferenceInput } from "./types";
 
 /** A member's references: your own, or anyone's whose profile you can see. */
 export async function listReferences(

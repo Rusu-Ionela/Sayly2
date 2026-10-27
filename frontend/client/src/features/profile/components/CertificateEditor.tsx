@@ -6,10 +6,10 @@ import { useColors } from "@/shared/theme";
 import { radius } from "@/shared/theme/radius";
 import { spacing } from "@/shared/theme/spacing";
 
-import { CEFR_LEVELS, type CefrLevel } from "../model/profileLimits";
 import { certificateFormSchema, type CertificateFormValues } from "../schema";
 
 import { TextField } from "@/shared/components/TextField";
+import { CEFR_LEVELS, type CefrLevel } from "@sayly/shared";
 
 type CertificateEditorProps = {
   /** Languages the certificate can be for (the user's spoken + learning ones). */

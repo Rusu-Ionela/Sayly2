@@ -4,6 +4,7 @@ import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import { db } from "../../db/client";
 import { profileViews, users } from "../../db/schema";
 import { notBlockedBetween } from "../safety/blockFilter";
+import { hasProAccess } from "../users/pro";
 
 type Page = { limit: number; offset: number };
 
@@ -39,11 +40,11 @@ export async function markVisitorsSeen(userId: string) {
 
 export async function isPro(userId: string) {
   const [row] = await db
-    .select({ isPro: users.isPro })
+    .select({ isPro: users.isPro, proUntil: users.proUntil })
     .from(users)
     .where(eq(users.id, userId))
     .limit(1);
-  return row?.isPro ?? false;
+  return row ? hasProAccess(row) : false;
 }
 
 function visitorsOf(userId: string, since?: Date | null) {

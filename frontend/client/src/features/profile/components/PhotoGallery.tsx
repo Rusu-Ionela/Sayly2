@@ -4,15 +4,15 @@ import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from "rea
 import { Image } from "expo-image";
 
 import { uploadChatFile } from "@/features/chat/api/chatApi";
-import { resolveMediaUrl } from "@/lib/mediaUrl";
+import { remoteImageSource, resolveMediaUrl } from "@/lib/mediaUrl";
 import { ImageViewerModal } from "@/shared/components/ImageViewerModal";
 import { useColors } from "@/shared/theme";
 import { radius } from "@/shared/theme/radius";
 import { spacing } from "@/shared/theme/spacing";
+import { MAX_PROFILE_PHOTOS } from "@sayly/shared";
 
 import { GALLERY_MAX_EDGE } from "../model/avatar";
 import { compressImage, pickImage } from "../model/imageCompression";
-import { MAX_PROFILE_PHOTOS } from "../model/profileLimits";
 
 const COLUMNS = 3;
 
@@ -27,7 +27,7 @@ const GalleryImage = memo(function GalleryImage({ uri }: { uri: string | null })
     <>
       {uri && status !== "error" ? (
         <Image
-          source={{ uri }}
+          source={remoteImageSource(uri)}
           style={styles.image}
           contentFit="cover"
           transition={150}

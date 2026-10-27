@@ -1,21 +1,24 @@
 import { and, asc, count, eq, isNull, or, sql } from "drizzle-orm";
+import { MAX_AGE, MAX_AVATAR_BYTES, MIN_AGE } from "@sayly/shared";
 
 import { db, type DbTransaction } from "../../db/client";
 import {
   conversationTopics,
   follows,
   groupMembers,
+  icebreakerAnswers,
   languageCertificates,
   onboardingDrafts,
   passwordResetTokens,
-  profileViews,
   profiles,
+  profileViews,
   pushTokens,
   refreshTokens,
   savedPhrases,
   userLanguages,
-  userSettings,
   users,
+  userSettings,
+  userStreaks,
 } from "../../db/schema";
 import { revokeUserSockets } from "../../lib/sessionRevocation";
 import { removeUserFromAllGroups } from "../groups/repository";
@@ -42,8 +45,9 @@ import { toLearningPreferenceColumns } from "./learningPreferences";
 import { isBlockedEitherWay } from "../safety/repository";
 
 import { ageFromDateOfBirth } from "./age";
-import { MAX_AVATAR_BYTES, type AvatarInput } from "./avatar";
+import type { AvatarInput } from "./avatar";
 import { assertVisibleMember } from "./memberSummary";
+import { hasProAccess } from "./pro";
 import { SETTINGS_COLUMNS } from "./settings";
 import {
   computeProfileCompleted,
@@ -172,6 +176,7 @@ export async function getCurrentUserSource(userId: string): Promise<CurrentUserS
         email: true,
         saylyId: true,
         isPro: true,
+        proUntil: true,
         onboardingCompleted: true,
       },
       with: PROFILE_RELATIONS,
@@ -184,7 +189,7 @@ export async function getCurrentUserSource(userId: string): Promise<CurrentUserS
     throw new AppError("User not found", 404, "NOT_FOUND");
   }
 
-  return { ...user, stats, referenceSummary };
+  return { ...user, isPro: hasProAccess(user), stats, referenceSummary };
 }
 
 /**
@@ -202,6 +207,7 @@ async function getPublicProfileSource(
         id: true,
         status: true,
         isPro: true,
+        proUntil: true,
         onboardingCompleted: true,
       },
       with: PROFILE_RELATIONS,
@@ -213,7 +219,7 @@ async function getPublicProfileSource(
     throw new AppError("User not found", 404, "NOT_FOUND");
   }
 
-  return { ...user, referenceSummary };
+  return { ...user, isPro: hasProAccess(user), referenceSummary };
 }
 
 /** Row-locks an active user for the rest of the transaction. */
@@ -426,8 +432,8 @@ export async function completeOnboarding(
       ? ageFromDateOfBirth(dateOfBirth)
       : (input.age ?? existingProfile?.age ?? undefined);
 
-    if (resolvedAge !== undefined && (resolvedAge < 18 || resolvedAge > 120)) {
-      throw new AppError("You must be at least 18 years old", 400, "VALIDATION_ERROR");
+    if (resolvedAge !== undefined && (resolvedAge < MIN_AGE || resolvedAge > MAX_AGE)) {
+      throw new AppError(`You must be at least ${MIN_AGE} years old`, 400, "VALIDATION_ERROR");
     }
 
     // Same ownership rule as profile edits: a new avatar must be the user's own upload.
@@ -803,6 +809,8 @@ export async function softDeleteAccount(userId: string) {
       .where(eq(languageCertificates.userId, userId));
     await tx.delete(userSettings).where(eq(userSettings.userId, userId));
     await tx.delete(pushTokens).where(eq(pushTokens.userId, userId));
+    await tx.delete(userStreaks).where(eq(userStreaks.userId, userId));
+    await tx.delete(icebreakerAnswers).where(eq(icebreakerAnswers.userId, userId));
     // Profile dashboard data: topics, who they follow / who follows them, profile visits.
     await tx.delete(conversationTopics).where(eq(conversationTopics.userId, userId));
     await tx

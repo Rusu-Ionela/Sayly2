@@ -13,6 +13,7 @@ export type ProfileMenuRoute =
         | "LearningPreferences"
         | "Topics"
         | "Connections"
+        | "FriendsLeaderboard"
         | "Following";
     }
   | { name: "ProfileVisits"; params: { mode: "visitors" | "viewed" } };
@@ -43,8 +44,14 @@ function languagesSummary(profile: CurrentUserProfile) {
   return parts.length ? parts.join(" · ") : "Native, fluent and learning languages";
 }
 
-/** The Profile tab's navigation list, with live counts in the subtitles. */
-export function buildProfileMenu(profile: CurrentUserProfile): ProfileMenuItem[] {
+/**
+ * The Profile tab's navigation list, with live counts in the subtitles.
+ * `incomingRequests`: partner requests waiting for your answer.
+ */
+export function buildProfileMenu(
+  profile: CurrentUserProfile,
+  incomingRequests = 0,
+): ProfileMenuItem[] {
   const { savedPhrases, following, newVisitors } = profile.stats;
   const certificates = profile.certificates.length;
 
@@ -92,8 +99,18 @@ export function buildProfileMenu(profile: CurrentUserProfile): ProfileMenuItem[]
       key: "connections",
       icon: "people-circle-outline",
       title: "Connections",
-      subtitle: "Requests and language partners",
+      subtitle: incomingRequests
+        ? `${count(incomingRequests, "new request", "new requests")} waiting for you`
+        : "Requests and language partners",
+      badge: incomingRequests || undefined,
       route: { name: "Connections" },
+    },
+    {
+      key: "leaderboard",
+      icon: "trophy-outline",
+      title: "Streak leaderboard",
+      subtitle: "Finish first by Sunday and win 1 day of Pro",
+      route: { name: "FriendsLeaderboard" },
     },
     {
       key: "following",

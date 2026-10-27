@@ -1,6 +1,6 @@
 import { z } from "zod";
+import { isValidCountryInput, normalizeCountryInput } from "@sayly/shared";
 
-import { isValidCountryInput, normalizeCountryInput } from "../users/countries";
 
 import { DEFAULT_CITY_RESULTS, MAX_CITY_RESULTS } from "./cities";
 

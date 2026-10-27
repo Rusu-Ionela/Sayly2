@@ -1,13 +1,9 @@
 import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { queryKeys } from "@/lib/queryKeys";
+import type { SaveReferenceInput } from "@sayly/shared";
 
-import {
-  deleteReference,
-  getReferences,
-  saveReference,
-  type SaveReferenceInput,
-} from "../api/referencesApi";
+import { deleteReference, getReferences, saveReference } from "../api/referencesApi";
 
 export function useReferences(userId: string) {
   return useInfiniteQuery({

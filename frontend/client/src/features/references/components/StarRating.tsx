@@ -1,9 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
+import { RATING_MAX } from "@sayly/shared";
 import { Pressable, StyleSheet, View } from "react-native";
 
 import { useColors } from "@/shared/theme";
 
-import { RATING_LABELS, RATING_MAX } from "../model/referenceSummary";
+import { RATING_LABELS } from "../model/referenceSummary";
 
 type StarRatingProps = {
   value: number;

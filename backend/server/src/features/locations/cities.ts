@@ -1,6 +1,6 @@
+import { normalizeCountryInput } from "@sayly/shared";
 import cityIndex from "./data/cities.json";
 
-import { normalizeCountryInput } from "../users/countries";
 
 /**
  * Cities per ISO 3166-1 alpha-2 country, most populous first.

@@ -14,8 +14,8 @@ import {
 import { useColors } from "@/shared/theme";
 import { radius } from "@/shared/theme/radius";
 import { spacing } from "@/shared/theme/spacing";
+import { REFERENCE_BODY_MAX, type SaveReferenceInput } from "@sayly/shared";
 
-import { MAX_REFERENCE_LENGTH, type SaveReferenceInput } from "../api/referencesApi";
 import { RATING_LABELS } from "../model/referenceSummary";
 
 import { StarRating } from "./StarRating";
@@ -83,7 +83,7 @@ export function ReferenceModal({
             value={body}
             onChangeText={setBody}
             multiline
-            maxLength={MAX_REFERENCE_LENGTH}
+            maxLength={REFERENCE_BODY_MAX}
             placeholder="What was it like practising together?"
             placeholderTextColor={colors.muted}
             textAlignVertical="top"
@@ -94,7 +94,7 @@ export function ReferenceModal({
             accessibilityLabel="Reference text"
           />
           <Text style={[styles.counter, { color: colors.muted }]}>
-            {body.length}/{MAX_REFERENCE_LENGTH}
+            {body.length}/{REFERENCE_BODY_MAX}
           </Text>
           {error ? <Text style={[styles.error, { color: colors.rose }]}>{error}</Text> : null}
           <View style={styles.actions}>

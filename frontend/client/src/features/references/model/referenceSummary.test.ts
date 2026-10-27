@@ -29,10 +29,16 @@ describe("referenceErrorMessage", () => {
   it("falls back for network, rate-limit and server errors", () => {
     expect(referenceErrorMessage(new TypeError("Network request failed"), fallback)).toBe(fallback);
     expect(
-      referenceErrorMessage(new ApiError({ status: 429, code: "RATE_LIMITED", message: "Too many requests" }), fallback),
+      referenceErrorMessage(
+        new ApiError({ status: 429, code: "RATE_LIMITED", message: "Too many requests" }),
+        fallback,
+      ),
     ).toBe(fallback);
     expect(
-      referenceErrorMessage(new ApiError({ status: 500, code: "INTERNAL_ERROR", message: "boom" }), fallback),
+      referenceErrorMessage(
+        new ApiError({ status: 500, code: "INTERNAL_ERROR", message: "boom" }),
+        fallback,
+      ),
     ).toBe(fallback);
   });
 });

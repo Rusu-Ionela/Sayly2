@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import request from "supertest";
+import { MAX_AVATAR_BYTES, MAX_PROFILE_PHOTOS, normalizeCountryInput } from "@sayly/shared";
 
 vi.mock("../../shared/middleware/authenticate", () => import("../../test/authMock"));
 
@@ -21,10 +22,7 @@ vi.mock("./service", () => ({
 
 import { createApp } from "../../lib/app";
 import * as usersService from "./service";
-import { MAX_AVATAR_BYTES } from "./avatar";
-import { MAX_PROFILE_PHOTOS } from "./profileLimits";
 import { onboardingDraftSchema, updateProfileSchema, updateSettingsSchema } from "./schema";
-import { normalizeCountryInput } from "./countries";
 
 const mockedService = vi.mocked(usersService);
 
@@ -295,6 +293,7 @@ describe("PRO-001 / PRO-002 profile API", () => {
           notifyMessages: true,
           notifyConnectionRequests: true,
           notifyGroupActivity: true,
+          notifyStreakReminders: true,
           showSaylyId: true,
           showCertificates: true,
           translateTo: null,

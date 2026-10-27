@@ -15,6 +15,7 @@ describe("profile menu", () => {
       "learningPreferences",
       "topics",
       "connections",
+      "leaderboard",
       "following",
       "visitors",
       "viewed",
@@ -54,6 +55,15 @@ describe("profile menu", () => {
     expect(menu.collection!.subtitle).toBe("4 saved");
     expect(menu.topics!.subtitle).toBe("Main topic: Street food");
     expect(menu.learningPreferences!.subtitle).toBe("Video calls · Every day · Please correct me");
+  });
+
+  it("flags partner requests waiting for an answer", () => {
+    const menu = Object.fromEntries(
+      buildProfileMenu(testProfile, 2).map((item) => [item.key, item]),
+    );
+    expect(menu.connections!.subtitle).toBe("2 new requests waiting for you");
+    expect(menu.connections!.badge).toBe(2);
+    expect(byKey().connections!.badge).toBeUndefined();
   });
 
   it("builds a share message with the profile link", () => {

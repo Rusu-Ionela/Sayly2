@@ -1,7 +1,7 @@
+import type { ReferenceSummaryDto } from "@sayly/shared";
 import type { CefrLevel, UserLanguageType, UserSettings } from "../../db/schema";
 
 import { resignMediaUrl } from "../media/storage";
-import type { ReferenceSummaryDto } from "../references/types";
 
 import { currentAge } from "./age";
 import { toLearningPreferencesDto } from "./learningPreferences";

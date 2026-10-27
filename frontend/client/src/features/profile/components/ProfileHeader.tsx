@@ -3,7 +3,6 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import type { UserLanguageDto } from "@/features/languages/types";
 import { resolveMediaUrl } from "@/lib/mediaUrl";
-import { countryFlagEmoji, findCountryByName } from "@/shared/data/countries";
 import { Avatar } from "@/shared/components/Avatar";
 import { ImageViewerModal } from "@/shared/components/ImageViewerModal";
 import { ProBadge } from "@/shared/components/ProBadge";
@@ -11,6 +10,7 @@ import { useColors } from "@/shared/theme";
 import { radius } from "@/shared/theme/radius";
 import { spacing } from "@/shared/theme/spacing";
 import { getTypography } from "@/shared/theme/typography";
+import { countryFlagEmoji, findCountryByName } from "@sayly/shared";
 
 import type { OnlineStatus } from "../types";
 
@@ -31,6 +31,8 @@ type ProfileHeaderProps = {
   size?: number;
   /** Replaces the tappable avatar — EditProfile passes an ImagePickerAvatar here. */
   avatarSlot?: ReactNode;
+  /** Stats row right under the languages (streak, partners…). */
+  stats?: ReactNode;
   /** Quick actions under the languages (e.g. Edit profile). */
   actions?: ReactNode;
   /** Your own Sayly ID, shown under the name (own profile only). */
@@ -76,6 +78,7 @@ export const ProfileHeader = memo(function ProfileHeader({
   learningLanguages = [],
   size = 96,
   avatarSlot,
+  stats,
   actions,
   saylyId,
 }: ProfileHeaderProps) {
@@ -164,6 +167,8 @@ export const ProfileHeader = memo(function ProfileHeader({
         <LanguageChips items={primary.learning} tone="learning" compact />
       </View>
 
+      {stats}
+
       {actions ? <View style={styles.actions}>{actions}</View> : null}
 
       {avatarSlot ? null : (
@@ -241,6 +246,7 @@ const styles = StyleSheet.create({
   },
   actions: {
     flexDirection: "row",
+    justifyContent: "center",
     gap: spacing.sm,
     marginTop: spacing.md,
     alignSelf: "stretch",

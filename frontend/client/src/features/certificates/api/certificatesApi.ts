@@ -1,5 +1,5 @@
-import type { CefrLevel } from "@/features/profile/model/profileLimits";
 import { apiClient } from "@/lib/apiClient";
+import type { CefrLevel } from "@sayly/shared";
 
 export type Price = {
   currency: string;

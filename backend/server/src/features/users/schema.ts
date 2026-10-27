@@ -1,12 +1,33 @@
 import { z } from "zod";
-
 import {
+  BIO_MAX,
+  CEFR_LEVELS,
+  CERTIFICATE_TITLE_MAX,
+  CERTIFICATE_TITLE_MIN,
+  CITY_MAX,
+  CITY_MIN,
   currentPasswordSchema,
+  DISPLAY_NAME_MAX,
+  DISPLAY_NAME_MIN,
+  FIRST_NAME_MIN,
+  isValidCountryInput,
+  LAST_NAME_MIN,
+  MAX_AGE,
+  MAX_AVATAR_BYTES,
+  MAX_CERTIFICATES,
+  MAX_PROFILE_PHOTOS,
+  MAX_TOPICS,
+  MIN_AGE,
+  MIN_CERTIFICATE_YEAR,
   multilineTextSchema,
   newPasswordSchema,
+  PERSON_NAME_MAX,
+  PRACTICE_GOALS,
   singleLineTextSchema,
-  storedTextSchema,
-} from "../../shared/validation/text";
+  TOPICS,
+} from "@sayly/shared";
+
+import { storedTextSchema } from "../../shared/validation/text";
 import {
   addLanguageSelectionIssues,
   languageSelectionSchema,
@@ -20,19 +41,9 @@ import { normalizeLanguageCode } from "../languages/catalog";
 import { extractStorageKey, stableFilePath } from "../media/storage";
 
 import { ageFromDateOfBirth, parseStrictUtcDate } from "./age";
-import { isValidCountryInput } from "./countries";
 import { learningPreferencesSchema } from "./learningPreferences";
-import { PRACTICE_GOALS } from "./practiceGoals";
-import { MAX_AVATAR_BYTES, type AvatarInput, type AvatarMimeType } from "./avatar";
-import {
-  CEFR_LEVELS,
-  MAX_CERTIFICATES,
-  MAX_PROFILE_PHOTOS,
-  MAX_TOPICS,
-  MIN_CERTIFICATE_YEAR,
-} from "./profileLimits";
-import { TOPICS } from "./topics";
-import type { OnboardingDraftInput, UpdateProfileInput, UpdateSettingsInput } from "./types";
+import type { AvatarInput, AvatarMimeType } from "./avatar";
+import type { UpdateProfileInput, UpdateSettingsInput } from "./types";
 
 export { syncUserLanguagesSchema as updateLanguagesSchema };
 
@@ -103,7 +114,7 @@ const avatarSchema = z
       const match = AVATAR_DATA_URI.exec(value);
       if (!match) {
         ctx.addIssue({
-          code: z.ZodIssueCode.custom,
+          code: "custom",
           message: "Profile image must be a base64 JPEG, PNG or WebP",
         });
         return z.NEVER;
@@ -111,11 +122,11 @@ const avatarSchema = z
       const mimeType = match[1] as AvatarMimeType;
       const data = Buffer.from(match[2]!, "base64");
       if (data.byteLength > MAX_AVATAR_BYTES) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Profile image must be 2 MB or smaller" });
+        ctx.addIssue({ code: "custom", message: "Profile image must be 2 MB or smaller" });
         return z.NEVER;
       }
       if (!matchesImageSignature(mimeType, data)) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Profile image content does not match its type" });
+        ctx.addIssue({ code: "custom", message: "Profile image content does not match its type" });
         return z.NEVER;
       }
       return { kind: "inline", mimeType, data };
@@ -123,7 +134,7 @@ const avatarSchema = z
 
     if (!isAllowedAvatarUrl(value)) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: "custom",
         message: "Upload your profile photo from your device",
       });
       return z.NEVER;
@@ -150,7 +161,7 @@ const galleryPhotoSchema = z
   .transform((value, ctx) => {
     const key = extractStorageKey(value.trim());
     if (!key) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Photos must be images you uploaded" });
+      ctx.addIssue({ code: "custom", message: "Photos must be images you uploaded" });
       return z.NEVER;
     }
     return stableFilePath(key);
@@ -161,7 +172,7 @@ const certificateSchema = z
   .object({
     languageId: z.string().trim().min(1).max(64),
     level: z.enum(CEFR_LEVELS),
-    title: singleLineTextSchema(2, 60, "Certificate name"),
+    title: singleLineTextSchema(CERTIFICATE_TITLE_MIN, CERTIFICATE_TITLE_MAX, "Certificate name"),
     issuedYear: z
       .number()
       .int()
@@ -175,13 +186,13 @@ const certificatesSchema = z.array(certificateSchema).max(MAX_CERTIFICATES);
 
 /** "" clears the city. */
 const citySchema = z
-  .union([singleLineTextSchema(2, 60, "City"), z.literal("")])
+  .union([singleLineTextSchema(CITY_MIN, CITY_MAX, "City"), z.literal("")])
   .transform((value) => value || null);
 
-const displayNameSchema = singleLineTextSchema(2, 50, "Display name");
-const firstNameSchema = singleLineTextSchema(2, 40, "First name");
-const lastNameSchema = singleLineTextSchema(1, 40, "Last name");
-const bioSchema = multilineTextSchema(500, "Bio");
+const displayNameSchema = singleLineTextSchema(DISPLAY_NAME_MIN, DISPLAY_NAME_MAX, "Display name");
+const firstNameSchema = singleLineTextSchema(FIRST_NAME_MIN, PERSON_NAME_MAX, "First name");
+const lastNameSchema = singleLineTextSchema(LAST_NAME_MIN, PERSON_NAME_MAX, "Last name");
+const bioSchema = multilineTextSchema(BIO_MAX, "Bio");
 
 const dateOfBirthSchema = z
   .string()
@@ -189,14 +200,14 @@ const dateOfBirthSchema = z
   .transform((value, ctx) => {
     const date = parseStrictUtcDate(value);
     if (!date) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Invalid dateOfBirth" });
+      ctx.addIssue({ code: "custom", message: "Invalid dateOfBirth" });
       return z.NEVER;
     }
     const age = ageFromDateOfBirth(date);
-    if (age < 18 || age > 120) {
+    if (age < MIN_AGE || age > MAX_AGE) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Age must be between 18 and 120",
+        code: "custom",
+        message: `Age must be between ${MIN_AGE} and ${MAX_AGE}`,
       });
       return z.NEVER;
     }
@@ -322,7 +333,7 @@ export const completeOnboardingSchema = z
     gender: genderSchema.optional(),
     bio: bioSchema.optional(),
     country: countrySchema.optional(),
-    age: z.coerce.number().int().min(18).max(120).optional(),
+    age: z.coerce.number().int().min(MIN_AGE).max(MAX_AGE).optional(),
     dateOfBirth: dateOfBirthSchema.optional(),
     profileImageUrl: z.union([avatarUrlSchema, z.literal(""), z.null()]).optional(),
     spokenLanguages: spokenLanguagesFieldSchema,
@@ -350,6 +361,7 @@ export const updateSettingsSchema = z
     notifyMessages: z.boolean().optional(),
     notifyConnectionRequests: z.boolean().optional(),
     notifyGroupActivity: z.boolean().optional(),
+    notifyStreakReminders: z.boolean().optional(),
     showSaylyId: z.boolean().optional(),
     showCertificates: z.boolean().optional(),
     /** Language code, or null to translate into your native language. */
@@ -359,7 +371,7 @@ export const updateSettingsSchema = z
       .transform((value, ctx) => {
         const code = normalizeLanguageCode(value);
         if (!code) {
-          ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Unsupported translation language" });
+          ctx.addIssue({ code: "custom", message: "Unsupported translation language" });
           return z.NEVER;
         }
         return code;

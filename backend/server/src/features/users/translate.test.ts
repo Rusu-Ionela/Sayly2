@@ -95,7 +95,8 @@ describe("POST /users/:id/translate", () => {
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ text: "Salut, invat engleza", lang: "ro" });
     const requested = new URL(String(fetchMock.mock.calls[0]?.[0]));
-    expect(requested.searchParams.get("langpair")).toBe("autodetect|ro");
+    // The source is detected by Sayly (Russian text), never left to MyMemory's autodetect.
+    expect(requested.searchParams.get("langpair")).toBe("ru|ro");
   });
 
   it("translates topics as one comma-separated line", async () => {
