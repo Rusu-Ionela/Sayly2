@@ -1,15 +1,15 @@
 import { z } from "zod";
+import { PRACTICE_GOALS } from "@sayly/shared";
 
 import { proficiencyLevelEnum } from "../../db/schema";
 import { storedTextSchema } from "../../shared/validation/text";
-import { PRACTICE_GOALS } from "../users/practiceGoals";
 
 import { DEFAULT_MAX_MEMBERS } from "./policy";
 
 const blankToUndefined = (value: unknown) =>
   typeof value === "string" && value.trim() === "" ? undefined : value;
 
-const languageIdSchema = z.string().trim().min(2).max(16).regex(/^[a-z0-9-]+$/i, "Invalid language");
+const languageIdSchema = z.string().trim().min(2).max(16).regex(/^[A-Za-z0-9-]+$/, "Invalid language");
 const levelSchema = z.enum(proficiencyLevelEnum.enumValues);
 const topicSchema = z.enum(PRACTICE_GOALS);
 const visibilitySchema = z.enum(["PUBLIC", "PRIVATE"]);

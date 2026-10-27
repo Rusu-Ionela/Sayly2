@@ -2,6 +2,7 @@ import { Router } from "express";
 
 import { groupActionLimiter, groupCreateLimiter, messageSendLimiter } from "../../infra/limiter/middleware";
 import { authenticate } from "../../shared/middleware/authenticate";
+import { groupFeedRouter } from "../groupFeed";
 import * as controller from "./controller";
 
 /** Mounted at /groups. Every rule is enforced server-side in policy.ts. */
@@ -22,3 +23,6 @@ groupsRouter.delete("/:id/members/:userId", authenticate, groupActionLimiter, co
 groupsRouter.get("/:id/messages", authenticate, controller.listMessages);
 groupsRouter.post("/:id/messages", authenticate, messageSendLimiter, controller.sendMessage);
 groupsRouter.patch("/:id/read", authenticate, controller.markRead);
+
+// Feed: posts, comments and reactions (features/groupFeed).
+groupsRouter.use("/:id/posts", groupFeedRouter);

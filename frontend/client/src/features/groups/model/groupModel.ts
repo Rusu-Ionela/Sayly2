@@ -55,3 +55,28 @@ export function flattenGroupMessages(data: Pages | undefined): GroupMessage[] {
   if (!data) return [];
   return [...data.pages].reverse().flatMap((page) => page.items);
 }
+
+export type GroupActivity = { live: boolean; label: string };
+
+const LIVE_WINDOW_MS = 15 * 60_000;
+const HOUR_MS = 60 * 60_000;
+const DAY_MS = 24 * HOUR_MS;
+
+/**
+ * How recently a club was active, from its last message/post time. "Live" means something
+ * happened in the last 15 minutes. null when the club has never been active.
+ */
+export function groupActivity(
+  lastActivityAt: string | null,
+  now = Date.now(),
+): GroupActivity | null {
+  if (!lastActivityAt) return null;
+  const at = Date.parse(lastActivityAt);
+  if (Number.isNaN(at)) return null;
+  const ago = Math.max(0, now - at);
+  if (ago < LIVE_WINDOW_MS) return { live: true, label: "Active now" };
+  if (ago < HOUR_MS) return { live: false, label: `Active ${Math.floor(ago / 60_000)}m ago` };
+  if (ago < DAY_MS) return { live: false, label: `Active ${Math.floor(ago / HOUR_MS)}h ago` };
+  if (ago < 7 * DAY_MS) return { live: false, label: `Active ${Math.floor(ago / DAY_MS)}d ago` };
+  return null;
+}

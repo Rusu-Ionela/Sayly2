@@ -20,6 +20,11 @@ import { radius } from "@/shared/theme/radius";
 import { spacing } from "@/shared/theme/spacing";
 import { getTypography } from "@/shared/theme/typography";
 
+import { PartyRoomCard } from "@/features/partyRooms/components/PartyRoomCard";
+import { usePartyRooms } from "@/features/partyRooms/hooks/usePartyRooms";
+
+import { PostCard } from "../components/PostCard";
+import { useGroupFeed, usePostReaction } from "../hooks/useGroupFeed";
 import { useDeleteGroup, useGroup, useGroupActions, useGroupMembers } from "../hooks/useGroups";
 import { groupPrimaryAction, isGroupModerator, isGroupOwner, roleLabel } from "../model/groupModel";
 import type { GroupMember } from "../types";
@@ -121,6 +126,9 @@ export function GroupDetailScreen() {
   const requests = useGroupMembers(groupId, "PENDING", moderator);
   const actions = useGroupActions(groupId);
   const deleteGroup = useDeleteGroup();
+  const feed = useGroupFeed(groupId, isMember);
+  const react = usePostReaction(groupId);
+  const groupRooms = usePartyRooms({ groupId }, isMember);
   const [membersExpanded, setMembersExpanded] = useState(false);
 
   useEffect(() => {
@@ -243,6 +251,58 @@ export function GroupDetailScreen() {
           <Text style={[styles.note, { color: colors.muted }]}>
             A moderator reviews requests. You’ll see the discussion once approved.
           </Text>
+        ) : null}
+
+        {isMember ? (
+          <Section title="Live rooms">
+            {(groupRooms.data ?? []).map((room) => (
+              <PartyRoomCard
+                key={room.id}
+                room={room}
+                onOpen={() => navigation.navigate("PartyRoom", { roomId: room.id })}
+              />
+            ))}
+            {groupRooms.data?.length === 0 ? (
+              <Text style={[styles.audience, { color: colors.muted }]}>
+                No room is live. Start one and practise speaking together.
+              </Text>
+            ) : null}
+            <TextAction
+              label="Start a room"
+              onPress={() =>
+                navigation.navigate("CreatePartyRoom", {
+                  group: {
+                    id: group.id,
+                    name: group.name,
+                    languageId: group.language.id,
+                    languageLabel: `${group.language.flagEmoji} ${group.language.name}`.trim(),
+                  },
+                })
+              }
+            />
+          </Section>
+        ) : null}
+
+        {isMember ? (
+          <Section title="Community feed">
+            {feed.posts.slice(0, 2).map((post) => (
+              <PostCard
+                key={post.clientId ?? post.id}
+                post={post}
+                onReact={react}
+                onOpen={(item) => navigation.navigate("GroupPost", { groupId, postId: item.id })}
+              />
+            ))}
+            {!feed.isPending && feed.posts.length === 0 ? (
+              <Text style={[styles.audience, { color: colors.muted }]}>
+                No posts yet. Share a thought or ask the group a question.
+              </Text>
+            ) : null}
+            <TextAction
+              label={feed.posts.length > 0 ? "Open feed" : "Write the first post"}
+              onPress={() => navigation.navigate("GroupFeed", { groupId })}
+            />
+          </Section>
         ) : null}
 
         {group.description || group.audience ? (

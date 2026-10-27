@@ -688,3 +688,26 @@ export async function markGroupRead(userId: string, groupId: string) {
     .set({ lastReadAt: new Date() })
     .where(and(eq(groupMembers.groupId, groupId), eq(groupMembers.userId, userId)));
 }
+
+/**
+ * For features that live inside a group (feed, Party Rooms): the live group and the viewer's
+ * membership, so they apply the same rules as the discussion. 404 for deleted groups.
+ */
+export async function getGroupAccess(groupId: string, userId: string) {
+  const group = await getLiveGroup(groupId);
+  return { group, membership: await getMembership(db, groupId, userId) };
+}
+
+/** Ids of the group's active members, for socket fan-out. */
+export function listActiveMemberIds(groupId: string) {
+  return activeMemberIds(db, groupId);
+}
+
+/** Groups the user is an active member of (ids only). */
+export async function listActiveGroupIdsOf(userId: string): Promise<string[]> {
+  const rows = await db
+    .select({ groupId: groupMembers.groupId })
+    .from(groupMembers)
+    .where(and(eq(groupMembers.userId, userId), eq(groupMembers.status, "ACTIVE")));
+  return rows.map((row) => row.groupId);
+}

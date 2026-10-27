@@ -12,7 +12,19 @@ export {
   listMembers,
   markGroupRead,
   removeMember,
-  sendGroupMessage,
   transferOwnership,
   updateGroup,
 } from "./repository";
+
+import { recordActivityInBackground } from "../streaks";
+
+import * as repository from "./repository";
+
+/** A new group message also counts the sender's day for their streak. */
+export async function sendGroupMessage(...args: Parameters<typeof repository.sendGroupMessage>) {
+  const result = await repository.sendGroupMessage(...args);
+  if (result.created) {
+    recordActivityInBackground(args[0]);
+  }
+  return result;
+}

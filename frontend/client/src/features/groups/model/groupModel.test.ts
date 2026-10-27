@@ -1,4 +1,9 @@
-import { flattenGroupMessages, groupPrimaryAction, upsertGroupMessage } from "./groupModel";
+import {
+  flattenGroupMessages,
+  groupActivity,
+  groupPrimaryAction,
+  upsertGroupMessage,
+} from "./groupModel";
 import type { GroupMessage } from "../types";
 
 const base = { visibility: "PUBLIC" as const, memberCount: 3, maxMembers: 10, viewer: null };
@@ -58,5 +63,26 @@ describe("upsertGroupMessage", () => {
     const once = upsertGroupMessage(data, message("m3"));
     const twice = upsertGroupMessage(once, message("m3"));
     expect(flattenGroupMessages(twice)).toHaveLength(3);
+  });
+});
+
+describe("groupActivity", () => {
+  const now = Date.parse("2026-10-27T12:00:00.000Z");
+  const ago = (ms: number) => new Date(now - ms).toISOString();
+
+  it("is live within 15 minutes", () => {
+    expect(groupActivity(ago(5 * 60_000), now)).toEqual({ live: true, label: "Active now" });
+  });
+
+  it("labels minutes, hours and days", () => {
+    expect(groupActivity(ago(40 * 60_000), now)?.label).toBe("Active 40m ago");
+    expect(groupActivity(ago(3 * 3_600_000), now)?.label).toBe("Active 3h ago");
+    expect(groupActivity(ago(2 * 86_400_000), now)?.label).toBe("Active 2d ago");
+  });
+
+  it("is null when never active, invalid or older than a week", () => {
+    expect(groupActivity(null, now)).toBeNull();
+    expect(groupActivity("nope", now)).toBeNull();
+    expect(groupActivity(ago(8 * 86_400_000), now)).toBeNull();
   });
 });

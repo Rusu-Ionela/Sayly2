@@ -9,7 +9,6 @@ import { useLanguages } from "@/features/languages";
 import { LanguageCatalogModal } from "@/features/languages/components/LanguageCatalogModal";
 import { formatProficiencyLabel } from "@/features/languages/model/proficiency";
 import type { Language, ProficiencyLevel } from "@/features/languages/types";
-import { PRACTICE_GOALS } from "@/features/profile/model/practiceGoals";
 import { isApiError } from "@/lib/api/errors";
 import type { AppStackParamList } from "@/navigation/types";
 import { Chip } from "@/shared/components/Chip";
@@ -19,6 +18,7 @@ import { useColors } from "@/shared/theme";
 import { radius } from "@/shared/theme/radius";
 import { spacing } from "@/shared/theme/spacing";
 import { getTypography } from "@/shared/theme/typography";
+import { PRACTICE_GOALS } from "@sayly/shared";
 
 import { useCreateGroup } from "../hooks/useGroups";
 import type { GroupVisibility } from "../types";

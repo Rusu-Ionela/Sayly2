@@ -1,12 +1,14 @@
+import { FlashList } from "@shopify/flash-list";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, FlatList, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, StyleSheet, Text, TextInput, View } from "react-native";
 import { KeyboardSafeView } from "@/shared/components/KeyboardSafeView";
 
 import { useAuth } from "@/features/auth";
 import { formatMessageClock } from "@/features/chat/utils/formatChatTime";
+import { CHAT_LIST_MVCP } from "@/features/chat/constants";
 import { isApiError } from "@/lib/api/errors";
 import type { AppStackParamList } from "@/navigation/types";
 import { Avatar } from "@/shared/components/Avatar";
@@ -183,9 +185,10 @@ export function GroupChatScreen() {
             onAction={() => void chat.refetch()}
           />
         ) : (
-          <FlatList
+          <FlashList
             showsVerticalScrollIndicator={false}
             inverted
+            maintainVisibleContentPosition={CHAT_LIST_MVCP}
             data={data}
             keyExtractor={(item) => item.clientMessageId ?? item.id}
             renderItem={renderItem}
@@ -197,10 +200,10 @@ export function GroupChatScreen() {
             ListFooterComponent={
               chat.isFetchingNextPage || chat.isPending ? (
                 <ActivityIndicator color={colors.accent} style={styles.loading} />
-              ) : null
+              ) : undefined
             }
             ListEmptyComponent={
-              chat.isPending ? null : (
+              chat.isPending ? undefined : (
                 <View style={styles.emptyFlip}>
                   <WarmEmptyState
                     title="Say hello 👋"
@@ -247,7 +250,7 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   loading: { marginVertical: spacing.lg },
   list: { flexGrow: 1, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
-  // The inverted FlatList already un-inverts its empty component; a manual flip mirrors it on Android.
+  // The inverted list already un-inverts its empty component; a manual flip mirrors it on Android.
   emptyFlip: { flex: 1, justifyContent: "center" },
   row: { flexDirection: "row", alignItems: "flex-end", marginVertical: 2, gap: 6 },
   rowMine: { justifyContent: "flex-end" },
