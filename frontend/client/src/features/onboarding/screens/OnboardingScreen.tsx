@@ -27,7 +27,6 @@ import {
 import { useAuth } from "@/features/auth/AuthProvider";
 import { uploadChatFile } from "@/features/chat/api/chatApi";
 import { LanguageCatalogModal } from "@/features/languages/components/LanguageCatalogModal";
-import { MAX_LEARNING_LANGUAGES, MAX_SPOKEN_LANGUAGES } from "@/features/languages/constants";
 import { useLanguages } from "@/features/languages/hooks/useLanguages";
 import type { Language, UserLanguageSelection } from "@/features/languages/types";
 import { languageFlag } from "@/features/languages/utils";
@@ -39,6 +38,7 @@ import { spacing } from "@/shared/theme/spacing";
 
 import { BirthdayPickerField } from "../components/BirthdayPickerField";
 import { ImagePickerAvatar } from "@/features/profile/components/ImagePickerAvatar";
+import { MAX_LEARNING_LANGUAGES, MAX_SPOKEN_LANGUAGES } from "@sayly/shared";
 
 import { CountryPicker } from "../components/CountryPicker";
 import {
@@ -122,7 +122,8 @@ export function OnboardingScreen() {
     draft: OnboardingDraft;
   } | null>(null);
 
-  const languages = languagesQuery.data ?? [];
+  const languageData = languagesQuery.data;
+  const languages = useMemo(() => languageData ?? [], [languageData]);
   const languageById = useMemo(
     () => new Map(languages.map((language) => [language.id, language])),
     [languages],
@@ -570,7 +571,7 @@ function ProfileStep({
       <IconBadge name="person" />
       <Text style={[styles.screenTitle, { color: colors.text }]}>Your profile</Text>
       <Text style={[styles.screenSubtitle, { color: colors.muted }]}>
-        Everyone uses their real name on Sayly. What's yours?
+        Everyone uses their real name on Sayly. What’s yours?
       </Text>
       <TextInput
         value={draft.firstName}

@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 
+import { countryFlagEmoji, findCountry, searchCountries, type Country } from "@sayly/shared";
+
 import { SearchablePicker, type PickerItem } from "@/shared/components/SearchablePicker";
-import { WORLD_COUNTRIES, countryFlagEmoji, findCountry } from "@/shared/data/countries";
 
 type CountryPickerProps = {
   value: string;
@@ -11,12 +12,12 @@ type CountryPickerProps = {
   allowClear?: boolean;
 };
 
-const COUNTRY_ITEMS: PickerItem[] = WORLD_COUNTRIES.map((country) => ({
+const toItem = (country: Country): PickerItem => ({
   key: country.code,
   label: country.name,
   detail: country.code,
   leading: countryFlagEmoji(country.code),
-}));
+});
 
 export function CountryPicker({
   value,
@@ -27,15 +28,7 @@ export function CountryPicker({
   const [query, setQuery] = useState("");
   const selected = findCountry(value);
 
-  const items = useMemo(() => {
-    const needle = query.trim().toLowerCase();
-    if (!needle) {
-      return COUNTRY_ITEMS;
-    }
-    return COUNTRY_ITEMS.filter(
-      (item) => item.label.toLowerCase().includes(needle) || item.key.toLowerCase() === needle,
-    );
-  }, [query]);
+  const items = useMemo(() => searchCountries(query).map(toItem), [query]);
 
   return (
     <SearchablePicker

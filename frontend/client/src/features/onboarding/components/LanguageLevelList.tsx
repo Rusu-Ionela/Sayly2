@@ -1,12 +1,12 @@
 import { useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { ConfirmDialog } from "@/features/languages/components/ConfirmDialog";
 import { LanguageCatalogModal } from "@/features/languages/components/LanguageCatalogModal";
 import type { Language, ProficiencyLevel, UserLanguageSelection } from "@/features/languages/types";
 import { languageFlag } from "@/features/languages/utils";
 import { useColors } from "@/shared/theme";
 import { spacing } from "@/shared/theme/spacing";
+import { confirmAction } from "@/shared/utils/confirmAction";
 
 import { PROFICIENCY_OPTIONS } from "../constants";
 
@@ -38,7 +38,6 @@ export function LanguageLevelList({
 }: LanguageLevelListProps) {
   const colors = useColors();
   const [catalogOpen, setCatalogOpen] = useState(false);
-  const [pendingRemove, setPendingRemove] = useState<{ id: string; name: string } | null>(null);
 
   const atMax = maxItems !== undefined && selected.length >= maxItems;
 
@@ -72,7 +71,13 @@ export function LanguageLevelList({
       onLimitReached?.("Keep at least one language in this list.");
       return;
     }
-    setPendingRemove({ id: languageId, name });
+    confirmAction({
+      title: `Remove ${name}?`,
+      message: "This language will be removed from your list.",
+      confirmLabel: "Remove",
+      cancelLabel: "Cancel",
+      onConfirm: () => onToggle(languageId),
+    });
   };
 
   return (
@@ -180,20 +185,6 @@ export function LanguageLevelList({
           onToggle(language.id);
         }}
         onClose={() => setCatalogOpen(false)}
-      />
-
-      <ConfirmDialog
-        visible={pendingRemove !== null}
-        title={pendingRemove ? `Remove ${pendingRemove.name}?` : "Remove language?"}
-        message="This language will be removed from your list."
-        confirmLabel="Remove"
-        onConfirm={() => {
-          if (pendingRemove) {
-            onToggle(pendingRemove.id);
-          }
-          setPendingRemove(null);
-        }}
-        onCancel={() => setPendingRemove(null)}
       />
     </View>
   );

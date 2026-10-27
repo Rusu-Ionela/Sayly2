@@ -1,90 +1,54 @@
-import DateTimePicker, { type DateTimePickerEvent } from "@react-native-community/datetimepicker";
-import { useState } from "react";
-import { Modal, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, TextInput } from "react-native";
 
 import {
-  dateOfBirthBounds,
-  formatDateOfBirth,
-  parseIsoDate,
-  toIsoDate,
-} from "@/features/profile/model/dateOfBirth";
+  DateOfBirthPicker,
+  NATIVE_DATE_PICKER,
+} from "@/features/profile/components/DateOfBirthPicker";
+import { formatDateOfBirth } from "@/features/profile/model/dateOfBirth";
 import { useColors } from "@/shared/theme";
-import { spacing } from "@/shared/theme/spacing";
 
 type BirthdayPickerFieldProps = {
   value: string;
   onChange: (isoDate: string) => void;
 };
 
+/** Onboarding's underlined birthday field; the picker itself is the shared DateOfBirthPicker. */
 export function BirthdayPickerField({ value, onChange }: BirthdayPickerFieldProps) {
   const colors = useColors();
-  const [open, setOpen] = useState(false);
-  const { minimumDate, maximumDate } = dateOfBirthBounds();
-  const selected = (value ? parseIsoDate(value) : null) ?? maximumDate;
+  const fieldStyle = [styles.field, { borderBottomColor: colors.border }];
 
-  const commit = (event: DateTimePickerEvent, next?: Date) => {
-    if (Platform.OS === "android") {
-      setOpen(false);
-    }
-    if (event.type === "dismissed" || !next) {
-      return;
-    }
-    onChange(toIsoDate(next));
-  };
-
-  const picker = (
-    <DateTimePicker
-      value={selected}
-      mode="date"
-      display={Platform.OS === "ios" ? "spinner" : "default"}
-      minimumDate={minimumDate}
-      maximumDate={maximumDate}
-      onChange={commit}
-      themeVariant="dark"
-      accentColor={colors.primary}
-    />
-  );
+  if (!NATIVE_DATE_PICKER) {
+    return (
+      <TextInput
+        value={value}
+        onChangeText={onChange}
+        placeholder="Your birthday (YYYY-MM-DD)"
+        placeholderTextColor={colors.placeholder}
+        autoCapitalize="none"
+        autoCorrect={false}
+        accessibilityLabel="Birthday"
+        style={[fieldStyle, styles.value, { color: colors.text }]}
+      />
+    );
+  }
 
   return (
-    <View>
-      <Pressable
-        onPress={() => setOpen(true)}
-        accessibilityRole="button"
-        accessibilityLabel={value ? `Birthday ${formatDateOfBirth(value)}` : "Choose your birthday"}
-        style={[styles.field, { borderBottomColor: colors.border }]}
-      >
-        <Text style={[styles.value, { color: value ? colors.text : colors.placeholder }]}>
-          {value ? formatDateOfBirth(value) : "Your birthday"}
-        </Text>
-      </Pressable>
-
-      {Platform.OS === "ios" ? (
-        <Modal
-          visible={open}
-          transparent
-          animationType="slide"
-          onRequestClose={() => setOpen(false)}
+    <DateOfBirthPicker value={value} onChange={onChange} title="Your birthday">
+      {(open) => (
+        <Pressable
+          onPress={open}
+          accessibilityRole="button"
+          accessibilityLabel={
+            value ? `Birthday ${formatDateOfBirth(value)}` : "Choose your birthday"
+          }
+          style={fieldStyle}
         >
-          <Pressable style={styles.backdrop} onPress={() => setOpen(false)} />
-          <View style={[styles.sheet, { backgroundColor: colors.card }]}>
-            <View style={styles.sheetHeader}>
-              <Pressable
-                onPress={() => {
-                  onChange(toIsoDate(selected));
-                  setOpen(false);
-                }}
-                accessibilityRole="button"
-              >
-                <Text style={[styles.done, { color: colors.primary }]}>Done</Text>
-              </Pressable>
-            </View>
-            {open ? picker : null}
-          </View>
-        </Modal>
-      ) : null}
-
-      {Platform.OS !== "ios" && open ? picker : null}
-    </View>
+          <Text style={[styles.value, { color: value ? colors.text : colors.placeholder }]}>
+            {value ? formatDateOfBirth(value) : "Your birthday"}
+          </Text>
+        </Pressable>
+      )}
+    </DateOfBirthPicker>
   );
 }
 
@@ -97,24 +61,5 @@ const styles = StyleSheet.create({
   value: {
     fontSize: 18,
     fontWeight: "500",
-  },
-  backdrop: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.45)",
-  },
-  sheet: {
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    paddingBottom: spacing.lg,
-  },
-  sheetHeader: {
-    alignItems: "flex-end",
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.sm,
-  },
-  done: {
-    fontSize: 17,
-    fontWeight: "700",
-    padding: spacing.sm,
   },
 });
