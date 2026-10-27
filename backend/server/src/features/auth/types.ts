@@ -1,4 +1,5 @@
 import type { User, UserRole, UserStatus } from "../../db/schema";
+import { resignMediaUrl } from "../media/storage";
 
 export type AuthUser = {
   id: string;
@@ -35,13 +36,24 @@ export type RequestMeta = {
   ip?: string;
 };
 
-export function toAuthUser(user: User): AuthUser {
+export type ProfileIdentity = {
+  displayName: string;
+  bio: string | null;
+  profileImageUrl: string | null;
+};
+
+/**
+ * `Profile` wins for name, bio and avatar. The `User` copies are only read before
+ * onboarding, when no Profile row exists yet.
+ */
+export function toAuthUser(user: User, profile?: ProfileIdentity | null): AuthUser {
+  const photo = profile ? profile.profileImageUrl : user.photoUrl;
   return {
     id: user.id,
     email: user.email,
-    displayName: user.displayName,
-    bio: user.bio,
-    photoUrl: user.photoUrl,
+    displayName: profile?.displayName || user.displayName,
+    bio: profile ? (profile.bio ?? "") : user.bio,
+    photoUrl: resignMediaUrl(photo),
     emailVerifiedAt: user.emailVerifiedAt?.toISOString() ?? null,
     status: user.status,
     role: user.role,

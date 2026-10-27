@@ -142,7 +142,7 @@ export function LoginScreen() {
           />
 
           <View style={styles.footer}>
-            <Text style={[styles.footerMuted, { color: copy.muted }]}>Don't have an account? </Text>
+            <Text style={[styles.footerMuted, { color: copy.muted }]}>Don’t have an account? </Text>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Create a new account"

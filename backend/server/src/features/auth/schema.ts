@@ -1,51 +1,50 @@
-import { extendZodWithOpenApi } from "@asteasolutions/zod-to-openapi";
 import { z } from "zod";
-
 import {
   currentPasswordSchema,
+  DISPLAY_NAME_MAX,
+  DISPLAY_NAME_MIN,
   emailSchema,
   newPasswordSchema,
-  refreshTokenSchema,
-} from "../../shared/validation/text";
+} from "@sayly/shared";
 
-extendZodWithOpenApi(z);
+import { refreshTokenSchema } from "../../shared/validation/text";
 
 export const registerSchema = z
   .object({
-    email: emailSchema.openapi({ example: "learner@example.com" }),
-    password: newPasswordSchema.openapi({ example: "SecurePass1!" }),
+    email: emailSchema.meta({ example: "learner@example.com" }),
+    password: newPasswordSchema.meta({ example: "SecurePass1!" }),
     displayName: z
       .string()
       .trim()
-      .min(2, "Display name must be at least 2 characters")
-      .max(50, "Display name is too long")
+      .min(DISPLAY_NAME_MIN, `Display name must be at least ${DISPLAY_NAME_MIN} characters`)
+      .max(DISPLAY_NAME_MAX, "Display name is too long")
       .refine((value) => !value.includes("\u0000"), "Invalid characters")
-      .openapi({ example: "Aryan" }),
+      .meta({ example: "Aryan" }),
   })
   .strict()
-  .openapi("SignupRequest");
+  .meta({ id: "SignupRequest" });
 
 export const loginSchema = z
   .object({
-    email: emailSchema.openapi({ example: "learner@example.com" }),
-    password: currentPasswordSchema.openapi({ example: "SecurePass1" }),
+    email: emailSchema.meta({ example: "learner@example.com" }),
+    password: currentPasswordSchema.meta({ example: "SecurePass1" }),
   })
   .strict()
-  .openapi("LoginRequest");
+  .meta({ id: "LoginRequest" });
 
 export const refreshSchema = z
   .object({
     refreshToken: refreshTokenSchema,
   })
   .strict()
-  .openapi("RefreshRequest");
+  .meta({ id: "RefreshRequest" });
 
 export const logoutSchema = z
   .object({
     refreshToken: refreshTokenSchema,
   })
   .strict()
-  .openapi("LogoutRequest");
+  .meta({ id: "LogoutRequest" });
 
 export const forgotPasswordSchema = z
   .object({
@@ -67,7 +66,7 @@ export const resetPasswordSchema = z
     password: newPasswordSchema,
   })
   .strict()
-  .openapi("ResetPasswordRequest");
+  .meta({ id: "ResetPasswordRequest" });
 
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;

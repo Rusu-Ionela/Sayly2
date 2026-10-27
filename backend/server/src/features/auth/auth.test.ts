@@ -4,6 +4,7 @@ import request from "supertest";
 vi.mock("./repository", () => ({
   findUserByEmail: vi.fn(),
   findUserById: vi.fn(),
+  findProfileIdentity: vi.fn().mockResolvedValue(null),
   createRefreshToken: vi.fn(),
   findRefreshTokenByHash: vi.fn(),
   revokeRefreshTokenFamily: vi.fn(),
@@ -41,6 +42,7 @@ type TestUser = {
   saylyId: string;
   authVersion: number;
   isPro: boolean;
+  proUntil: Date | null;
   lastSeenAt: Date | null;
   visitorsSeenAt: Date | null;
   createdAt: Date;
@@ -107,6 +109,7 @@ function makeUser(overrides: Partial<TestUser> = {}): TestUser {
     saylyId: "ABC12345",
     authVersion: 0,
     isPro: false,
+    proUntil: null,
     lastSeenAt: null,
     visitorsSeenAt: null,
     createdAt: now,
@@ -270,6 +273,29 @@ describe("auth schemas via HTTP", () => {
     expect(res.status).toBe(200);
     expect(res.body.user.id).toBe(user.id);
     expect(res.body.user.passwordHash).toBeUndefined();
+  });
+
+  it("prefers Profile name, bio and avatar over the User copies", async () => {
+    const user = makeUser();
+    const accessToken = await signAccessToken({
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+      authVersion: user.authVersion,
+    });
+    mockedRepo.findUserById.mockResolvedValue(user);
+    mockedRepo.findProfileIdentity.mockResolvedValueOnce({
+      displayName: "Profile Name",
+      bio: "Profile bio",
+      profileImageUrl: "/media/files/abc123.jpg",
+    });
+
+    const res = await request(app).get("/auth/me").set("Authorization", `Bearer ${accessToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.user.displayName).toBe("Profile Name");
+    expect(res.body.user.bio).toBe("Profile bio");
+    expect(res.body.user.photoUrl).toMatch(/^\/media\/files\/abc123\.jpg\?exp=\d+&sig=[0-9a-f]+$/);
   });
 
   it("logs out and revokes refresh token", async () => {

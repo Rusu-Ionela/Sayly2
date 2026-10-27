@@ -29,6 +29,11 @@ import { toAuthUser } from "./types";
 import { sendPasswordResetEmail } from "./mail";
 
 const INVALID_CREDENTIALS = "Invalid email or password";
+
+/** Auth payload with name, bio and avatar taken from Profile when it exists. */
+async function authUserFor(user: repository.User) {
+  return toAuthUser(user, await repository.findProfileIdentity(user.id));
+}
 const RESET_INVALID = "Invalid or expired reset token";
 
 async function issueSession(
@@ -60,7 +65,7 @@ async function issueSession(
   return {
     accessToken,
     refreshToken,
-    user: toAuthUser(user),
+    user: await authUserFor(user),
   };
 }
 
@@ -179,7 +184,7 @@ export async function refresh(input: RefreshInput, meta: RequestMeta = {}): Prom
   return {
     accessToken,
     refreshToken: newRefreshToken,
-    user: toAuthUser(result.user),
+    user: await authUserFor(result.user),
   };
 }
 
@@ -203,7 +208,7 @@ export async function getMe(userId: string): Promise<{ user: ReturnType<typeof t
     throw new AppError("Unauthorized", 401, "UNAUTHORIZED");
   }
 
-  return { user: toAuthUser(user) };
+  return { user: await authUserFor(user) };
 }
 
 export type ForgotPasswordResult = {
@@ -239,20 +244,23 @@ export async function forgotPassword(input: ForgotPasswordInput): Promise<Forgot
   }
 
   // Not awaited: waiting on SMTP would make real accounts answer slower (or fail) than unknown emails.
-  void Promise.resolve(
-    sendPasswordResetEmail({
-      to: user.email,
-      displayName: user.displayName,
-      code,
-      expiresInSeconds,
-      challengeId,
-    }),
-  ).catch((error: unknown) => {
-    logger.error("auth", "password reset email failed", {
-      userId: user.id,
-      message: error instanceof Error ? error.message : "Unknown error",
+  void repository
+    .findProfileIdentity(user.id)
+    .then((profile) =>
+      sendPasswordResetEmail({
+        to: user.email,
+        displayName: profile?.displayName || user.displayName,
+        code,
+        expiresInSeconds,
+        challengeId,
+      }),
+    )
+    .catch((error: unknown) => {
+      logger.error("auth", "password reset email failed", {
+        userId: user.id,
+        message: error instanceof Error ? error.message : "Unknown error",
+      });
     });
-  });
 
   logger.info("auth", "password reset issued", { userId: user.id, email: maskEmail(user.email) });
 

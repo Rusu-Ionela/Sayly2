@@ -3,9 +3,10 @@ import { and, eq, isNull, lt, sql } from "drizzle-orm";
 
 import { db } from "../../db/client";
 import type { PasswordResetToken, RefreshToken, User, UserStatus } from "../../db/schema";
-import { passwordResetTokens, refreshTokens, users } from "../../db/schema";
+import { passwordResetTokens, profiles, refreshTokens, users } from "../../db/schema";
 import { AppError } from "../../shared/errors/AppError";
 import { requireRow } from "../../db/helpers";
+import type { ProfileIdentity } from "./types";
 
 /** Kept past expiry so a replayed old refresh token is still recognised as reuse. */
 const TOKEN_RETENTION_MS = 24 * 60 * 60 * 1000;
@@ -30,6 +31,20 @@ export async function findUserByEmail(email: string): Promise<User | null> {
 
 export async function findUserById(id: string): Promise<User | null> {
   const rows = await db.select().from(users).where(eq(users.id, id)).limit(1);
+  return rows[0] ?? null;
+}
+
+/** Name, bio and avatar from `Profile` — the source of truth once onboarding has created it. */
+export async function findProfileIdentity(userId: string): Promise<ProfileIdentity | null> {
+  const rows = await db
+    .select({
+      displayName: profiles.displayName,
+      bio: profiles.bio,
+      profileImageUrl: profiles.profileImageUrl,
+    })
+    .from(profiles)
+    .where(eq(profiles.userId, userId))
+    .limit(1);
   return rows[0] ?? null;
 }
 

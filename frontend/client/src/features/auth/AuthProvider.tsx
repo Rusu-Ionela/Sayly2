@@ -14,6 +14,7 @@ import { configureApiAuth, ensureAccessToken } from "@/lib/apiClient";
 import { isApiError } from "@/lib/api/errors";
 import { log, maskEmail } from "@/lib/logger";
 import { queryClient } from "@/lib/queryClient";
+import { clearPersistedQueries } from "@/lib/queryPersistence";
 import { configureSocketAuth, resetSocket } from "@/lib/socket";
 
 import { runSignOutTasks } from "./signOutTasks";
@@ -84,6 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setRefreshToken(null);
       setUser(null);
       queryClient.clear();
+      await clearPersistedQueries().catch(() => undefined);
     })().finally(() => {
       clearSessionPromise.current = null;
     });

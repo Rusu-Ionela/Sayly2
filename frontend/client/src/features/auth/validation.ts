@@ -1,3 +1,12 @@
+import {
+  EMAIL_MAX_LENGTH,
+  emailSchema,
+  PASSWORD_MAX_LENGTH,
+  PASSWORD_MIN_LENGTH,
+  PASSWORD_RULES,
+  RESET_CODE_PATTERN,
+} from "@sayly/shared";
+
 export type FieldErrors = {
   displayName?: string;
   email?: string;
@@ -12,17 +21,16 @@ export type PasswordRule = {
   ok: boolean;
 };
 
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
 export function validateEmail(email: string): string | undefined {
   const value = email.trim();
   if (!value) {
     return "Email is required.";
   }
-  if (value.length > 254) {
+  if (value.length > EMAIL_MAX_LENGTH) {
     return "Email is too long.";
   }
-  if (!EMAIL_PATTERN.test(value)) {
+  // Same check as the server, so an address the app accepts is never rejected there.
+  if (!emailSchema.safeParse(value).success) {
     return "Please enter a valid email address.";
   }
   return undefined;
@@ -36,26 +44,21 @@ function validateLoginPassword(password: string): string | undefined {
 }
 
 export function passwordRules(password: string): PasswordRule[] {
-  return [
-    { label: "Minimum 8 characters", ok: password.length >= 8 },
-    { label: "At least one uppercase letter", ok: /[A-Z]/.test(password) },
-    { label: "At least one number", ok: /[0-9]/.test(password) },
-    { label: "At least one symbol character", ok: /[^A-Za-z0-9]/.test(password) },
-  ];
+  return PASSWORD_RULES.map((rule) => ({ label: rule.label, ok: rule.test(password) }));
 }
 
 export function validateRegisterPassword(password: string): string | undefined {
   if (!password) {
     return "Password is required.";
   }
-  if (password.length > 128) {
+  if (password.length > PASSWORD_MAX_LENGTH) {
     return "Password is too long.";
   }
   if (password.includes("\u0000")) {
     return "Password contains invalid characters.";
   }
   if (passwordRules(password).some((rule) => !rule.ok)) {
-    return "Use 8 characters with an uppercase letter, a number, and a symbol.";
+    return `Use ${PASSWORD_MIN_LENGTH} characters with an uppercase letter, a number, and a symbol.`;
   }
   return undefined;
 }
@@ -65,7 +68,7 @@ export function validateResetToken(token: string): string | undefined {
   if (!value) {
     return "Reset code is required.";
   }
-  if (!/^\d{8}$/.test(value)) {
+  if (!RESET_CODE_PATTERN.test(value)) {
     return "Enter the 8-digit code.";
   }
   return undefined;
