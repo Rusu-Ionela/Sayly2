@@ -13,14 +13,12 @@ import { SettingRow } from "@/shared/components/SettingRow";
 import { TextField } from "@/shared/components/TextField";
 import { useColors } from "@/shared/theme";
 import { spacing } from "@/shared/theme/spacing";
+import { SUPPORT_MESSAGE_MAX, SUPPORT_SUBJECT_MAX, type SupportTopic } from "@sayly/shared";
 
-import type { SupportTopic } from "../api/supportApi";
 import { SupportIntro } from "../components/SupportIntro";
 import { supportErrorMessage, useSubmitSupportTicket } from "../hooks/useSubmitSupportTicket";
 import { currentDeviceContext, describeDeviceContext } from "../model/deviceContext";
 import {
-  MESSAGE_MAX,
-  SUBJECT_MAX,
   SUPPORT_FORMS,
   SUPPORT_TOPIC_OPTIONS,
   normalizeSupportForm,
@@ -111,7 +109,7 @@ export function SupportFormScreen() {
               setSubject(next);
               if (errors.subject) setErrors((prev) => ({ ...prev, subject: undefined }));
             }}
-            maxLength={SUBJECT_MAX}
+            maxLength={SUPPORT_SUBJECT_MAX}
             error={errors.subject}
             returnKeyType="next"
           />
@@ -124,7 +122,7 @@ export function SupportFormScreen() {
               setMessage(next);
               if (errors.message) setErrors((prev) => ({ ...prev, message: undefined }));
             }}
-            maxLength={MESSAGE_MAX}
+            maxLength={SUPPORT_MESSAGE_MAX}
             showCounter
             multiline
             error={errors.message}

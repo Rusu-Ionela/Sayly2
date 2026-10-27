@@ -1,7 +1,6 @@
+import { SUPPORT_MESSAGE_MAX, SUPPORT_SUBJECT_MAX } from "@sayly/shared";
 import { FAQ_CATEGORIES } from "./faqContent";
 import {
-  MESSAGE_MAX,
-  SUBJECT_MAX,
   SUPPORT_FORMS,
   SUPPORT_TOPIC_OPTIONS,
   normalizeSupportForm,
@@ -25,8 +24,8 @@ describe("support form rules", () => {
     });
     expect(
       validateSupportForm({
-        subject: "x".repeat(SUBJECT_MAX + 1),
-        message: "y".repeat(MESSAGE_MAX + 1),
+        subject: "x".repeat(SUPPORT_SUBJECT_MAX + 1),
+        message: "y".repeat(SUPPORT_MESSAGE_MAX + 1),
       }),
     ).toEqual({
       subject: expect.stringMatching(/under/),

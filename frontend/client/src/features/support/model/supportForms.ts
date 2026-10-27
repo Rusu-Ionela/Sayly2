@@ -1,15 +1,18 @@
-import type { IconName } from "@/shared/components/SettingRow";
+import {
+  sanitizeMultiline,
+  sanitizeSingleLine,
+  SUPPORT_MESSAGE_MAX,
+  SUPPORT_MESSAGE_MIN,
+  SUPPORT_SUBJECT_MAX,
+  SUPPORT_SUBJECT_MIN,
+  type SupportTicketKind,
+  type SupportTopic,
+} from "@sayly/shared";
 
-import type { SupportTicketKind, SupportTopic } from "../api/supportApi";
+import type { IconName } from "@/shared/components/SettingRow";
 
 /** Route param of the SupportForm screen (also the deep link: /support/<kind>). */
 export type SupportFormKind = "contact" | "feature" | "bug";
-
-/** Same limits as the backend (features/support/schema.ts). */
-const SUBJECT_MIN = 3;
-export const SUBJECT_MAX = 120;
-const MESSAGE_MIN = 10;
-export const MESSAGE_MAX = 4000;
 
 export type SupportFormConfig = {
   ticketKind: SupportTicketKind;
@@ -92,31 +95,26 @@ export const SUPPORT_TOPIC_OPTIONS: { id: SupportTopic; label: string }[] = [
 export type SupportFormValues = { subject: string; message: string };
 export type SupportFormErrors = Partial<Record<keyof SupportFormValues, string>>;
 
-/** Mirrors the server: single spaces in the subject, at most one blank line in the message. */
+/** Same cleanup as the server: single spaces in the subject, at most one blank line in the message. */
 export function normalizeSupportForm(values: SupportFormValues): SupportFormValues {
   return {
-    subject: values.subject.replace(/\s+/g, " ").trim(),
-    message: values.message
-      .replace(/\r\n?/g, "\n")
-      .replace(/[^\S\n]+/g, " ")
-      .replace(/ *\n */g, "\n")
-      .replace(/\n{3,}/g, "\n\n")
-      .trim(),
+    subject: sanitizeSingleLine(values.subject),
+    message: sanitizeMultiline(values.message),
   };
 }
 
 export function validateSupportForm(values: SupportFormValues): SupportFormErrors {
   const { subject, message } = normalizeSupportForm(values);
   const errors: SupportFormErrors = {};
-  if (subject.length < SUBJECT_MIN) {
-    errors.subject = `Please write at least ${SUBJECT_MIN} characters.`;
-  } else if (subject.length > SUBJECT_MAX) {
-    errors.subject = `Keep it under ${SUBJECT_MAX} characters.`;
+  if (subject.length < SUPPORT_SUBJECT_MIN) {
+    errors.subject = `Please write at least ${SUPPORT_SUBJECT_MIN} characters.`;
+  } else if (subject.length > SUPPORT_SUBJECT_MAX) {
+    errors.subject = `Keep it under ${SUPPORT_SUBJECT_MAX} characters.`;
   }
-  if (message.length < MESSAGE_MIN) {
-    errors.message = `Please write at least ${MESSAGE_MIN} characters.`;
-  } else if (message.length > MESSAGE_MAX) {
-    errors.message = `Keep it under ${MESSAGE_MAX} characters.`;
+  if (message.length < SUPPORT_MESSAGE_MIN) {
+    errors.message = `Please write at least ${SUPPORT_MESSAGE_MIN} characters.`;
+  } else if (message.length > SUPPORT_MESSAGE_MAX) {
+    errors.message = `Keep it under ${SUPPORT_MESSAGE_MAX} characters.`;
   }
   return errors;
 }

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import request from "supertest";
+import { createSupportTicketSchema, SUPPORT_MESSAGE_MAX } from "@sayly/shared";
 
 vi.mock("../../shared/middleware/authenticate", () => import("../../test/authMock"));
 vi.mock("../../infra/limiter/middleware", async (importOriginal) => {
@@ -24,7 +25,6 @@ vi.mock("./service", () => ({
 
 import { createApp } from "../../lib/app";
 import { TEST_VIEWER_ID } from "../../test/authMock";
-import { createSupportTicketSchema, MESSAGE_MAX } from "./schema";
 import * as supportService from "./service";
 
 const service = vi.mocked(supportService);
@@ -51,7 +51,7 @@ describe("support tickets", () => {
     it("rejects messages that are too short or too long", () => {
       expect(() => createSupportTicketSchema.parse({ ...bugReport, message: "Broken" })).toThrow();
       expect(() =>
-        createSupportTicketSchema.parse({ ...bugReport, message: "x".repeat(MESSAGE_MAX + 1) }),
+        createSupportTicketSchema.parse({ ...bugReport, message: "x".repeat(SUPPORT_MESSAGE_MAX + 1) }),
       ).toThrow();
     });
 

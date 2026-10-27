@@ -1,10 +1,13 @@
 import type { Request, Response } from "express";
+import {
+  createFeedbackSchema,
+  createSupportTicketSchema,
+  type SupportTicketKind,
+} from "@sayly/shared";
 
 import { requireUserId } from "../../shared/middleware/requireUserId";
 
-import { createFeedbackSchema, createSupportTicketSchema } from "./schema";
 import * as supportService from "./service";
-import type { SupportTicketKind } from "./types";
 
 /** POST /support/tickets — contact us, request a feature or report a bug. */
 export async function createTicket(req: Request, res: Response) {

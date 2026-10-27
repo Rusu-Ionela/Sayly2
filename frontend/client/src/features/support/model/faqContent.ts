@@ -1,6 +1,5 @@
 import type { IconName } from "@/shared/components/SettingRow";
-
-import type { SupportTopic } from "../api/supportApi";
+import type { SupportTopic } from "@sayly/shared";
 
 type FaqEntry = { question: string; answer: string };
 

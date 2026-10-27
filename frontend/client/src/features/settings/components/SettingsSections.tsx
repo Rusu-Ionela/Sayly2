@@ -19,6 +19,7 @@ import { SettingRow } from "@/shared/components/SettingRow";
 import { useColors, useTheme } from "@/shared/theme";
 import { spacing } from "@/shared/theme/spacing";
 import { openExternalUrl } from "@/shared/utils/openExternal";
+import { confirmAction } from "@/shared/utils/confirmAction";
 
 import { useDownloadMyData } from "../hooks/useDownloadMyData";
 import type { SettingsAction, SettingsSection } from "../model/settingsSections";
@@ -90,34 +91,33 @@ export function SettingsSections({
           ],
         ),
       deleteAccount: () =>
-        Alert.alert(
-          "Delete account",
-          "Your profile, photos, certificates and settings are removed and you are hidden from Discover. This cannot be undone.",
-          [
-            { text: "Cancel", style: "cancel" },
-            {
-              text: "Delete",
-              style: "destructive",
-              onPress: () =>
-                deleteAccount.mutate(undefined, {
-                  onSuccess: () =>
-                    Alert.alert("Account deleted", "Your Sayly account has been deactivated.", [
-                      { text: "OK", onPress: () => void signOut() },
-                    ]),
-                  onError: () => Alert.alert("Could not delete account", "Please try again."),
-                }),
-            },
-          ],
-        ),
+        confirmAction({
+          title: "Delete account",
+          message:
+            "Your profile, photos, certificates and settings are removed and you are hidden from Discover. This cannot be undone.",
+          confirmLabel: "Delete",
+          cancelLabel: "Cancel",
+          onConfirm: () =>
+            deleteAccount.mutate(undefined, {
+              onSuccess: () =>
+                Alert.alert("Account deleted", "Your Sayly account has been deactivated.", [
+                  { text: "OK", onPress: () => void signOut() },
+                ]),
+              onError: () => Alert.alert("Could not delete account", "Please try again."),
+            }),
+        }),
     }),
     [deleteAccount, downloadData, isPro, navigation, signOut],
   );
 
   const confirmSignOut = () =>
-    Alert.alert("Sign out", "Are you sure you want to sign out?", [
-      { text: "Cancel", style: "cancel" },
-      { text: "Sign out", style: "destructive", onPress: () => void signOut() },
-    ]);
+    confirmAction({
+      title: "Sign out",
+      message: "Are you sure you want to sign out?",
+      confirmLabel: "Sign out",
+      cancelLabel: "Cancel",
+      onConfirm: () => void signOut(),
+    });
 
   const linkValue = (action: SettingsAction) => {
     if (action === "subscription") return isPro ? "Active" : "Upgrade";

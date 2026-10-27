@@ -15,6 +15,7 @@ import { useAuth } from "@/features/auth";
 import { KeyboardSafeView } from "@/shared/components/KeyboardSafeView";
 import { useColors } from "@/shared/theme";
 import { spacing } from "@/shared/theme/spacing";
+import { confirmAction } from "@/shared/utils/confirmAction";
 
 import { useBlockUser, useReportUser } from "../hooks/useSafety";
 import { REPORT_REASONS, type ReportReason } from "../types";
@@ -61,27 +62,22 @@ export function BlockReportMenu({
       Alert.alert("Not available", "You cannot block your own account.");
       return;
     }
-    Alert.alert(
-      "Block user",
-      `Block ${userName}? Their profile will disappear from Discover and messaging will stop.`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Block",
-          style: "destructive",
-          onPress: () => {
-            block.mutate(userId, {
-              onSuccess: () => {
-                Alert.alert("User blocked", `${userName} has been blocked.`);
-                onBlocked?.();
-                resetAndClose();
-              },
-              onError: () => Alert.alert("Could not block", "Please try again."),
-            });
+    confirmAction({
+      title: "Block user",
+      message: `Block ${userName}? Their profile will disappear from Discover and messaging will stop.`,
+      confirmLabel: "Block",
+      cancelLabel: "Cancel",
+      onConfirm: () => {
+        block.mutate(userId, {
+          onSuccess: () => {
+            Alert.alert("User blocked", `${userName} has been blocked.`);
+            onBlocked?.();
+            resetAndClose();
           },
-        },
-      ],
-    );
+          onError: () => Alert.alert("Could not block", "Please try again."),
+        });
+      },
+    });
   };
 
   const handleReport = () => {

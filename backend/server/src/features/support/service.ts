@@ -1,7 +1,7 @@
+import type { CreateSupportTicketInput, SupportTicketDto } from "@sayly/shared";
 import { logger } from "../../shared/utils/logger";
 
 import * as supportRepository from "./repository";
-import type { CreateSupportTicketInput, SupportTicketDto } from "./types";
 
 /** Saves a contact message, feature request or bug report from the signed-in member. */
 export async function createTicket(

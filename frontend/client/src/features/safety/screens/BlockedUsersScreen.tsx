@@ -1,12 +1,5 @@
-import {
-  ActivityIndicator,
-  Alert,
-  FlatList,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { FlashList } from "@shopify/flash-list";
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { Screen } from "@/shared/components/Screen";
 import { WarmEmptyState } from "@/shared/components/WarmEmptyState";
@@ -43,7 +36,7 @@ export function BlockedUsersScreen() {
           </Pressable>
         </View>
       ) : (
-        <FlatList
+        <FlashList
           showsVerticalScrollIndicator={false}
           data={items}
           keyExtractor={(item) => item.id}

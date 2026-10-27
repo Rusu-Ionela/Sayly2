@@ -9,6 +9,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  type TextInputInstance,
   View,
 } from "react-native";
 import { KeyboardSafeView } from "@/shared/components/KeyboardSafeView";
@@ -51,7 +52,7 @@ export function ChangePasswordSheet({ visible, onClose }: ChangePasswordSheetPro
   const changePassword = useChangePassword();
   const [values, setValues] = useState(EMPTY);
   const [currentError, setCurrentError] = useState<string>();
-  const inputs = useRef<Partial<Record<Field, TextInput | null>>>({});
+  const inputs = useRef<Partial<Record<Field, TextInputInstance | null>>>({});
 
   const form = passwordFormState(values);
   const errors: Partial<Record<Field, string>> = {

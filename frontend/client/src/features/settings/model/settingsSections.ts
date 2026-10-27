@@ -163,6 +163,12 @@ export const SETTINGS_SCREEN_SECTIONS: SettingsSection[] = [
         icon: "people-outline",
         title: "Group activity",
       },
+      {
+        kind: "toggle",
+        key: "notifyStreakReminders",
+        icon: "flame-outline",
+        title: "Streak reminders",
+      },
     ],
   },
   { id: "appearance", kind: "appearance", title: "Appearance" },

@@ -1,10 +1,10 @@
 import { and, desc, eq } from "drizzle-orm";
+import type { CreateSupportTicketInput, SupportTicketDto } from "@sayly/shared";
 
 import { db } from "../../db/client";
 import { supportTickets, users, type SupportTicket } from "../../db/schema";
 import { AppError } from "../../shared/errors/AppError";
 
-import type { CreateSupportTicketInput, SupportTicketDto } from "./types";
 
 function toSupportTicketDto(row: SupportTicket): SupportTicketDto {
   return {
