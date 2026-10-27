@@ -5,7 +5,12 @@ import { createServer } from "http";
 import { closeDb } from "./db/client";
 import { pruneExpiredTokens } from "./features/auth/repository";
 import { env } from "./config/env";
+import { pruneOldFlashQuests } from "./features/flashQuests";
 import { pruneOldInbox } from "./features/notifications";
+import { startWeeklyRewardJob } from "./features/leaderboard";
+import { startStreakReminderJob } from "./features/streaks/reminders";
+import { startStoryCleanupJob } from "./features/stories";
+import { startVoiceSparkCleanupJob } from "./features/voiceSparks";
 import { closeRedis, connectRedis } from "./infra/redis/client";
 import { createApp, setDraining } from "./lib/app";
 import { createSocketServer } from "./lib/socket";
@@ -18,13 +23,18 @@ async function main() {
 
   // Expired token rows and old inbox items are useless; sweep them at start and then daily.
   const pruneTokens = () =>
-    Promise.all([pruneExpiredTokens(), pruneOldInbox()]).catch((error: unknown) =>
+    Promise.all([pruneExpiredTokens(), pruneOldInbox(), pruneOldFlashQuests()]).catch((error: unknown) =>
       logger.warn("auth", "token prune failed", {
         message: error instanceof Error ? error.message : "Unknown error",
       }),
     );
   void pruneTokens();
   setInterval(() => void pruneTokens(), 24 * 60 * 60 * 1000).unref();
+
+  const stopStreakReminders = startStreakReminderJob();
+  const stopWeeklyRewards = startWeeklyRewardJob();
+  const stopVoiceSparkCleanup = startVoiceSparkCleanupJob();
+  const stopStoryCleanup = startStoryCleanupJob();
 
   const app = createApp();
   const httpServer = createServer(app);
@@ -65,6 +75,10 @@ async function main() {
     }, 10_000);
     force.unref();
 
+    stopStreakReminders();
+    stopWeeklyRewards();
+    stopVoiceSparkCleanup();
+    stopStoryCleanup();
     io.close();
     httpServer.close(async () => {
       try {

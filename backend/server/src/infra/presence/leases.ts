@@ -119,3 +119,18 @@ export async function sweepExpiredPresenceLeases(limit = 100): Promise<string[]>
 
   return [...new Set(newlyOfflineUserIds)];
 }
+
+/**
+ * Ids of members with at least one unexpired lease, read from the expiry index (score =
+ * lease expiry). Bounded by `limit` leases, so a busy server returns a sample, not everyone.
+ */
+export async function listLiveUserIds(limit = 500): Promise<string[]> {
+  const redis = getRedis();
+  const members = await redis.zRangeByScore(presenceExpiryKey(), Date.now(), Number.MAX_SAFE_INTEGER, limit);
+  const ids = new Set<string>();
+  for (const member of members) {
+    const parsed = parseExpiryMember(member);
+    if (parsed) ids.add(parsed.userId);
+  }
+  return [...ids];
+}

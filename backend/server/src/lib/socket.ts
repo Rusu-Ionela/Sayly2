@@ -7,6 +7,7 @@ import { findUserById } from "../features/auth/repository";
 import { verifyAccessToken } from "../features/auth/tokens";
 import { registerCallSockets } from "../features/calls";
 import { attachMessagingGateway, registerMessagingSockets } from "../features/messaging";
+import { registerPartyRoomSockets, startPartyRoomSweeper } from "../features/partyRooms";
 import { userRoom } from "../features/messaging/gateway";
 import { sweepStalePresence } from "../features/messaging/presence";
 import { broadcastPresence } from "../features/messaging/presenceBroadcast";
@@ -167,6 +168,7 @@ export async function createSocketServer(httpServer: HttpServer) {
 
     registerMessagingSockets(io, socket);
     registerCallSockets(socket);
+    registerPartyRoomSockets(socket);
   });
 
   io.engine.on("connection_error", (error) => {
@@ -188,6 +190,7 @@ export async function createSocketServer(httpServer: HttpServer) {
       });
   }, 5_000);
   sweeper.unref();
+  startPartyRoomSweeper(io);
 
   return io;
 }

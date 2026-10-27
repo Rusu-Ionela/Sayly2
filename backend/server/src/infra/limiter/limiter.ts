@@ -1,5 +1,7 @@
 import { createHash } from "crypto";
 
+import { PARTY_REACTION_LIMIT, PARTY_REACTION_WINDOW_MS } from "@sayly/shared";
+
 import { env } from "../../config/env";
 import { AppError } from "../../shared/errors/AppError";
 import { getRedis } from "../redis/client";
@@ -42,6 +44,11 @@ export const rateLimitPolicies = {
   supportTicket: { action: "support_ticket", windowMs: 60 * 60 * 1000, max: 10 },
   callInvite: { action: "call_invite", windowMs: 60_000, max: 10 },
   callSignal: { action: "call_signal", windowMs: 10_000, max: 300 },
+  /** Party Room joins and host/stage controls. */
+  partyAction: { action: "party_action", windowMs: 60_000, max: 60 },
+  partyReaction: { action: "party_reaction", windowMs: PARTY_REACTION_WINDOW_MS, max: PARTY_REACTION_LIMIT },
+  /** A speaker negotiates with every participant (mesh), so far more than a 1:1 call. */
+  partySignal: { action: "party_signal", windowMs: 10_000, max: 1_500 },
 } as const satisfies Record<string, RateLimitPolicy>;
 
 export function opaqueIdentity(value: string): string {

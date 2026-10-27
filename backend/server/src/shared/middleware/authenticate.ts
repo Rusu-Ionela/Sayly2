@@ -5,31 +5,18 @@ import { findUserById } from "../../features/auth/repository";
 import { verifyAccessToken } from "../../features/auth/tokens";
 import { AppError } from "../errors/AppError";
 
-type AuthUserRow = NonNullable<Awaited<ReturnType<typeof findUserById>>>;
+import { createAuthUserCache } from "./authUserCache";
 
 /** Upper bound on how stale a cached user can be if a revocation event is ever missed. */
-const AUTH_CACHE_TTL_MS = env.isTest ? 0 : 5_000;
-const AUTH_CACHE_MAX_ENTRIES = 5_000;
-const authCache = new Map<string, { user: AuthUserRow; expiresAt: number }>();
+const authUsers = createAuthUserCache({
+  ttlMs: env.isTest ? 0 : 5_000,
+  maxEntries: 5_000,
+  load: findUserById,
+});
 
 /** Called on every revocation (password change, reset, logout, delete) so changes apply at once. */
 export function invalidateAuthCache(userId: string) {
-  authCache.delete(userId);
-}
-
-async function loadAuthUser(userId: string) {
-  const hit = authCache.get(userId);
-  if (hit && hit.expiresAt > Date.now()) {
-    return hit.user;
-  }
-  const user = await findUserById(userId);
-  if (user && AUTH_CACHE_TTL_MS > 0) {
-    if (authCache.size >= AUTH_CACHE_MAX_ENTRIES) {
-      authCache.clear();
-    }
-    authCache.set(userId, { user, expiresAt: Date.now() + AUTH_CACHE_TTL_MS });
-  }
-  return user;
+  authUsers.invalidate(userId);
 }
 
 function extractBearerToken(authorizationHeader: string | undefined): string | null {
@@ -52,7 +39,7 @@ function extractBearerToken(authorizationHeader: string | undefined): string | n
  */
 async function attachUser(req: Request, token: string): Promise<boolean> {
   const payload = await verifyAccessToken(token);
-  const user = await findUserById(payload.sub);
+  const user = await authUsers.get(payload.sub);
 
   if (!user || user.status !== "ACTIVE" || user.authVersion !== payload.authVersion) {
     return false;
