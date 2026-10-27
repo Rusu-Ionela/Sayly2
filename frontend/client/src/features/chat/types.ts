@@ -60,6 +60,8 @@ export type Conversation = {
   updatedAt: string;
   /** Set while the viewer has this chat pinned. */
   pinnedAt?: string | null;
+  /** Incoming messages are translated automatically for me. */
+  autoTranslate?: boolean;
 };
 
 export type ConversationsPage = {

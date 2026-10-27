@@ -1,3 +1,4 @@
+import type { TranslateMessageInput } from "@sayly/shared";
 import { Platform } from "react-native";
 
 import { apiClient } from "@/lib/apiClient";
@@ -33,7 +34,7 @@ export type SendMessageBody = {
 
 type RequestOpts = { signal?: AbortSignal };
 
-export async function getConversations(
+async function getConversations(
   params: { cursor?: string; limit?: number } = {},
   opts: RequestOpts = {},
 ) {
@@ -95,14 +96,23 @@ export function setConversationPinnedHttp(conversationId: string, pinned: boolea
     : apiClient.delete<{ conversationId: string; pinned: boolean }>(path);
 }
 
+/** Translate this chat's incoming messages automatically (for me only). */
+export function setAutoTranslateHttp(conversationId: string, enabled: boolean) {
+  return apiClient.put<{ conversationId: string; autoTranslate: boolean }>(
+    `/conversations/${conversationId}/auto-translate`,
+    { enabled },
+  );
+}
+
+/** Defaults: my "Translate to" language, source detected automatically. */
 export function translateMessageHttp(
   conversationId: string,
   messageId: string,
-  targetLang?: string,
+  options: TranslateMessageInput = {},
 ) {
   return apiClient.post<ChatMessage>(
     `/conversations/${conversationId}/messages/${messageId}/translate`,
-    targetLang ? { targetLang } : {},
+    options,
   );
 }
 

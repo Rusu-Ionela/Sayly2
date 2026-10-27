@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import { autoTranslateSchema, translateMessageSchema } from "@sayly/shared";
 import { z } from "zod";
 
 import { AppError } from "../../shared/errors/AppError";
@@ -11,7 +12,6 @@ import {
   listMessagesQuerySchema,
   openDirectConversationSchema,
   sendMessageSchema,
-  translateMessageSchema,
 } from "./schema";
 import * as messagingService from "./service";
 import { promoteDelivered } from "./socket";
@@ -84,6 +84,13 @@ export function setPinned(pinned: boolean) {
   };
 }
 
+/** PUT /conversations/:id/auto-translate { enabled } */
+export async function setAutoTranslate(req: Request, res: Response) {
+  const conversationId = requireParam(req.params.id, "id");
+  const { enabled } = autoTranslateSchema.parse(req.body);
+  res.json(await messagingService.setConversationAutoTranslate(requireUserId(req), conversationId, enabled));
+}
+
 export async function translateMessage(req: Request, res: Response) {
   const conversationId = requireParam(req.params.id ?? req.params.conversationId, "id");
   const messageId = requireParam(req.params.messageId, "messageId");
@@ -94,6 +101,7 @@ export async function translateMessage(req: Request, res: Response) {
       conversationId,
       messageId,
       body.targetLang,
+      body.sourceLang,
     ),
   );
 }

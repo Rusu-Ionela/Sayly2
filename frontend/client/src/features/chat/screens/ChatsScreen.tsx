@@ -1,11 +1,13 @@
+import { FlashList } from "@shopify/flash-list";
 import { useCallback, useMemo, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
-import { Alert, FlatList, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 import { useAuth } from "@/features/auth";
 import { useProfile } from "@/features/profile/hooks/useProfile";
+import { StoryBar } from "@/features/stories";
 import { Avatar } from "@/shared/components/Avatar";
 import { AppRefreshControl } from "@/shared/components/AppRefreshControl";
 import { Screen } from "@/shared/components/Screen";
@@ -21,7 +23,6 @@ import { useFloatingTabBarPadding } from "@/navigation/floatingTabBar";
 
 import { ChatListItem } from "../components/ChatListItem";
 import { ChatListSkeleton } from "../components/ChatListSkeleton";
-import { CHAT_LIST_ROW_HEIGHT } from "../constants";
 import { useConversations } from "../hooks/useConversations";
 import { usePinConversation } from "../hooks/usePinConversation";
 import type { Conversation } from "../types";
@@ -105,6 +106,7 @@ export function ChatsScreen() {
           <Ionicons name="search" size={24} color={colors.muted} />
         </Pressable>
       </View>
+      <StoryBar />
       <View style={styles.filters}>
         <Chip label="All" selected={!unreadOnly} onPress={() => setUnreadOnly(false)} />
         <Chip label="Unread" selected={unreadOnly} onPress={() => setUnreadOnly(true)} />
@@ -130,21 +132,11 @@ export function ChatsScreen() {
           onAction={() => void conversations.refetch()}
         />
       ) : (
-        <FlatList
+        <FlashList
           showsVerticalScrollIndicator={false}
           data={visible}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
-          getItemLayout={(_, index) => ({
-            length: CHAT_LIST_ROW_HEIGHT,
-            offset: CHAT_LIST_ROW_HEIGHT * index,
-            index,
-          })}
-          windowSize={8}
-          maxToRenderPerBatch={8}
-          initialNumToRender={12}
-          updateCellsBatchingPeriod={50}
-          removeClippedSubviews={Platform.OS === "android"}
           keyboardShouldPersistTaps="handled"
           ListEmptyComponent={
             needle || unreadOnly ? (
@@ -182,7 +174,7 @@ export function ChatsScreen() {
           ListFooterComponent={
             conversations.isFetchingNextPage ? (
               <Text style={[styles.footer, { color: colors.muted }]}>Loading more…</Text>
-            ) : null
+            ) : undefined
           }
         />
       )}

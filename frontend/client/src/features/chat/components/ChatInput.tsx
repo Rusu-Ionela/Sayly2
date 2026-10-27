@@ -21,6 +21,8 @@ type ChatInputProps = {
   onSendMedia: (draft: ChatMediaDraft) => void;
   onTypingChange?: (typing: boolean) => void;
   disabled?: boolean;
+  /** Text already in the composer when the chat opens; the member can edit it before sending. */
+  initialValue?: string;
 };
 
 const TYPING_IDLE_MS = 2500;
@@ -32,9 +34,15 @@ function durationFromAsset(duration?: number | null) {
   return duration < 1000 ? Math.round(duration * 1000) : Math.round(duration);
 }
 
-export function ChatInput({ onSend, onSendMedia, onTypingChange, disabled }: ChatInputProps) {
+export function ChatInput({
+  onSend,
+  onSendMedia,
+  onTypingChange,
+  disabled,
+  initialValue,
+}: ChatInputProps) {
   const colors = useColors();
-  const [value, setValue] = useState("");
+  const [value, setValue] = useState(initialValue ?? "");
   const [attachOpen, setAttachOpen] = useState(false);
   const [preview, setPreview] = useState<ChatMediaDraft | null>(null);
   const typing = useRef(false);

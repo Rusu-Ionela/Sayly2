@@ -1,5 +1,6 @@
 import { createHmac, randomUUID } from "crypto";
 
+import { CALL_KINDS, type CallEndReason, type CallKind } from "@sayly/shared";
 import { z } from "zod";
 
 import { env } from "../../config/env";
@@ -8,9 +9,7 @@ import { callKey, callUserKey } from "../../infra/redis/keys";
 import { AppError } from "../../shared/errors/AppError";
 import { isOnline } from "../messaging/presence";
 import { assertCanAccessConversation } from "../messaging/service";
-
-export const CALL_KINDS = ["AUDIO", "VIDEO"] as const;
-export type CallKind = (typeof CALL_KINDS)[number];
+import { isInPartyRoom } from "../partyRooms/repository";
 
 /** Unanswered calls disappear from Redis on their own, so a crash can't leave anyone "busy". */
 export const RINGING_TTL_MS = 90_000;
@@ -27,7 +26,7 @@ const recordSchema = z.object({
 });
 export type CallRecord = z.infer<typeof recordSchema>;
 
-export type EndReason = "cancelled" | "declined" | "ended" | "disconnected";
+export type EndReason = CallEndReason;
 
 async function readRecord(callId: string): Promise<CallRecord | null> {
   const raw = await getRedis().get(callKey(callId));
@@ -65,6 +64,13 @@ export async function startCall(input: {
 
   if (!(await isOnline(calleeId))) {
     throw new AppError("They're offline right now", 409, "CALLEE_OFFLINE");
+  }
+  // A Party Room already holds the microphone of whoever is in one.
+  if (await isInPartyRoom(input.callerId)) {
+    throw new AppError("Leave your party room before calling", 409, "CALL_BUSY");
+  }
+  if (await isInPartyRoom(calleeId)) {
+    throw new AppError("They're in a party room right now", 409, "CALL_BUSY");
   }
 
   const redis = getRedis();
@@ -106,6 +112,18 @@ export async function acceptCall(callId: string, userId: string): Promise<CallRe
   await redis.pexpire(callUserKey(record.callerId), ACTIVE_TTL_MS);
   await redis.pexpire(callUserKey(record.calleeId), ACTIVE_TTL_MS);
   return active;
+}
+
+/** The callee rejects a call that is still ringing. */
+export async function declineCall(callId: string, userId: string): Promise<CallRecord> {
+  const record = await getCallForParticipant(callId, userId);
+  if (record.calleeId !== userId) {
+    throw new AppError("Only the person being called can decline", 403, "FORBIDDEN");
+  }
+  if (record.status !== "RINGING") {
+    throw new AppError("This call is no longer ringing", 409, "CONFLICT");
+  }
+  return (await endCall(callId, userId, "declined")).record;
 }
 
 /** Ends or cancels a call and frees both people. Idempotent: an already-ended call is a 404. */

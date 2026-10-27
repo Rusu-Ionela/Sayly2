@@ -1,8 +1,10 @@
-import { memo, useState } from "react";
-import { Alert, Image, Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { useRecyclingState } from "@shopify/flash-list";
+import { Image } from "expo-image";
+import { memo } from "react";
+import { Alert, Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 
 import { ApiError } from "@/lib/api/errors";
-import { resolveMediaUrl } from "@/lib/mediaUrl";
+import { remoteImageSource } from "@/lib/mediaUrl";
 import { KeyboardSafeView } from "@/shared/components/KeyboardSafeView";
 import { useColors } from "@/shared/theme";
 import { spacing } from "@/shared/theme/spacing";
@@ -11,6 +13,7 @@ import { isLocalMessageId } from "../cache";
 import { VIDEO_NOTE_MARKER } from "../constants";
 import type { ChatMessage } from "../types";
 import { formatMessageClock } from "../utils/formatChatTime";
+import { canTranslate } from "../utils/translation";
 import { ChatVideo, ChatVoice } from "./ChatMedia";
 import { MessageTicks } from "./MessageTicks";
 
@@ -45,9 +48,11 @@ function MessageBubbleComponent({
   const colors = useColors();
   const failed = message.localState === "failed";
   const sending = message.localState === "sending";
-  const [busy, setBusy] = useState<BusyKind>(null);
-  const [correctOpen, setCorrectOpen] = useState(false);
-  const [correctionDraft, setCorrectionDraft] = useState("");
+  // Rows are recycled by FlashList: this state belongs to one message and resets for the next.
+  const rowKey = message.clientMessageId ?? message.id;
+  const [busy, setBusy] = useRecyclingState<BusyKind>(null, [rowKey]);
+  const [correctOpen, setCorrectOpen] = useRecyclingState(false, [rowKey]);
+  const [correctionDraft, setCorrectionDraft] = useRecyclingState("", [rowKey]);
   const media = message.type === "IMAGE" || message.type === "VIDEO";
   const roundNote = message.type === "VIDEO" && message.thumbnailUrl === VIDEO_NOTE_MARKER;
   const canLearn = Boolean(phraseSource(message));
@@ -138,8 +143,13 @@ function MessageBubbleComponent({
         >
           {message.type === "IMAGE" ? (
             <Image
-              source={{ uri: resolveMediaUrl(message.content) ?? message.content }}
+              source={remoteImageSource(message.content)}
+              recyclingKey={rowKey}
               style={styles.image}
+              contentFit="cover"
+              cachePolicy="memory-disk"
+              transition={120}
+              accessibilityLabel="Photo"
             />
           ) : message.type === "VIDEO" ? (
             <ChatVideo key={message.content} uri={message.content} round={roundNote} />
@@ -164,7 +174,14 @@ function MessageBubbleComponent({
             <Text style={[styles.extra, { color: metaColor }]}>{message.transcript}</Text>
           ) : null}
           {message.translatedContent ? (
-            <Text style={[styles.extra, { color: textColor }]}>{message.translatedContent}</Text>
+            <View style={[styles.translation, { borderTopColor: metaColor }]}>
+              {message.translatedLang ? (
+                <Text style={[styles.translationLang, { color: metaColor }]}>
+                  🌐 {message.translatedLang.toUpperCase()}
+                </Text>
+              ) : null}
+              <Text style={[styles.extra, { color: textColor }]}>{message.translatedContent}</Text>
+            </View>
           ) : null}
           {message.correction ? (
             <View
@@ -211,8 +228,7 @@ function MessageBubbleComponent({
               </Text>
             </Pressable>
           ) : null}
-          {(message.type === "TEXT" || Boolean(message.caption) || Boolean(message.transcript)) &&
-          (message.type !== "IMAGE" || Boolean(message.caption)) ? (
+          {canTranslate(message) ? (
             <Pressable
               onPress={() =>
                 void run(
@@ -387,6 +403,16 @@ const styles = StyleSheet.create({
     marginTop: 6,
     fontSize: 13,
     lineHeight: 18,
+  },
+  translation: {
+    marginTop: 6,
+    paddingTop: 4,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  translationLang: {
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 0.5,
   },
   correction: {
     marginTop: 8,

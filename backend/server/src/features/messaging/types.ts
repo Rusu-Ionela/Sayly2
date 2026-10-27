@@ -60,6 +60,8 @@ export type ConversationListItem = {
   lastMessageAt: string | null;
   updatedAt: string;
   pinnedAt: string | null;
+  /** Incoming messages are translated automatically for this member. */
+  autoTranslate: boolean;
 };
 
 export type ConversationsPage = {

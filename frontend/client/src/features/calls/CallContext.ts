@@ -10,10 +10,12 @@ export type CallContextValue = {
   remoteStream: MediaStream | null;
   startCall: (input: { conversationId: string; kind: CallKind; peer: CallPeer }) => Promise<void>;
   accept: () => Promise<void>;
-  /** Cancels, declines or ends, whichever applies. */
+  /** Cancels, declines (while ringing) or ends, whichever applies. */
   hangUp: () => void;
   toggleMute: () => void;
   toggleCamera: () => void;
+  /** Loudspeaker vs earpiece. */
+  toggleSpeaker: () => void;
   flipCamera: () => void;
 };
 

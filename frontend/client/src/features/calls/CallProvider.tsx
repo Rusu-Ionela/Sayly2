@@ -7,29 +7,33 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import {
+  CALL_EVENTS,
+  CALL_RING_TIMEOUT_MS,
+  type CallAcceptedEvent,
+  type CallEndedEvent,
+  type CallIncomingEvent,
+  type CallSignalData,
+  type CallSignalEvent,
+} from "@sayly/shared";
+import { Alert } from "react-native";
 import type { MediaStream, RTCPeerConnection } from "react-native-webrtc";
 
 import { useSocketContext } from "@/features/chat/socket/SocketProvider";
 import { apiClient } from "@/lib/apiClient";
 
+import { resetCallAudio, setCallSpeaker } from "./audioRoute";
 import { CallScreen } from "./CallScreen";
 import { CallContext, type CallContextValue } from "./CallContext";
-import { callReducer, idleCall, type CallKind, type CallPeer } from "./callState";
+import { callReducer, idleCall, type CallKind } from "./callState";
 import { CALLS_UNSUPPORTED_MESSAGE, ensureCallPermissions, getWebRtc } from "./webrtc";
 
 /** Give up on an unanswered call after this long (the server forgets it after 90 s). */
-const RING_TIMEOUT_MS = 45_000;
+const RING_TIMEOUT_MS = CALL_RING_TIMEOUT_MS;
 
 type IceServer = { urls: string[]; username?: string; credential?: string };
 
-type SignalData =
-  | { type: "offer" | "answer"; sdp: string }
-  | {
-      type: "candidate";
-      candidate: { candidate: string; sdpMid: string | null; sdpMLineIndex: number | null };
-    };
-
-type IncomingPayload = { callId: string; conversationId: string; kind: CallKind; caller: CallPeer };
+type SignalData = CallSignalData;
 
 export function CallProvider({ children }: { children: ReactNode }) {
   const { socket, emit } = useSocketContext();
@@ -70,9 +74,11 @@ export function CallProvider({ children }: { children: ReactNode }) {
   }, [clearRingTimer]);
 
   const hangUp = useCallback(() => {
-    const { callId } = stateRef.current;
+    const { callId, phase } = stateRef.current;
     if (callId) {
-      emit("call_end", { callId }).catch(() => undefined);
+      // Rejecting a ring is its own event so the caller sees "declined".
+      const event = phase === "incoming" ? CALL_EVENTS.decline : CALL_EVENTS.end;
+      emit(event, { callId }).catch(() => undefined);
     }
     cleanup();
     dispatch({ type: "ended", reason: "local" });
@@ -80,7 +86,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
   const sendSignal = useCallback(
     (callId: string, data: SignalData) => {
-      emit("call_signal", { callId, data }).catch(() => undefined);
+      emit(CALL_EVENTS.signal, { callId, data }).catch(() => undefined);
     },
     [emit],
   );
@@ -123,7 +129,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
         if (pc.connectionState === "connected") {
           dispatch({ type: "connected", at: Date.now() });
         } else if (pc.connectionState === "failed") {
-          emit("call_end", { callId }).catch(() => undefined);
+          emit(CALL_EVENTS.end, { callId }).catch(() => undefined);
           cleanup();
           dispatch({ type: "ended", reason: "failed", callId });
         }
@@ -186,7 +192,10 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
       await openMedia(kind);
       try {
-        const { callId } = await emit<{ callId: string }>("call_invite", { conversationId, kind });
+        const { callId } = await emit<{ callId: string }>(CALL_EVENTS.invite, {
+          conversationId,
+          kind,
+        });
         dispatch({ type: "outgoing", callId, conversationId, kind, peer });
         ringTimer.current = setTimeout(hangUp, RING_TIMEOUT_MS);
       } catch (error) {
@@ -205,9 +214,9 @@ export function CallProvider({ children }: { children: ReactNode }) {
       await openMedia(kind);
       dispatch({ type: "connecting" });
       await createPeer(callId); // ready before the caller's offer arrives
-      await emit("call_accept", { callId });
+      await emit(CALL_EVENTS.accept, { callId });
     } catch {
-      emit("call_end", { callId }).catch(() => undefined);
+      emit(CALL_EVENTS.end, { callId }).catch(() => undefined);
       cleanup();
       dispatch({ type: "ended", reason: "failed", callId });
     }
@@ -217,9 +226,14 @@ export function CallProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!socket) return;
 
-    const onIncoming = (payload: IncomingPayload) => {
+    const onIncoming = (payload: CallIncomingEvent) => {
       if (!getWebRtc() || stateRef.current.phase !== "idle") {
-        emit("call_end", { callId: payload.callId }).catch(() => undefined);
+        // Busy here, or this device can't take calls: let another device (or nobody) answer.
+        if (stateRef.current.phase !== "idle") {
+          emit(CALL_EVENTS.decline, { callId: payload.callId }).catch(() => undefined);
+        } else {
+          Alert.alert(`${payload.caller.displayName} is calling you`, CALLS_UNSUPPORTED_MESSAGE);
+        }
         return;
       }
       dispatch({
@@ -234,7 +248,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
       }, RING_TIMEOUT_MS + 5_000);
     };
 
-    const onAccepted = async ({ callId }: { callId: string }) => {
+    const onAccepted = async ({ callId }: CallAcceptedEvent) => {
       if (stateRef.current.phase !== "outgoing" || stateRef.current.callId !== callId) return;
       clearRingTimer();
       dispatch({ type: "connecting" });
@@ -248,11 +262,11 @@ export function CallProvider({ children }: { children: ReactNode }) {
       }
     };
 
-    const onSignal = ({ callId, data }: { callId: string; data: SignalData }) => {
+    const onSignal = ({ callId, data }: CallSignalEvent) => {
       void handleSignal(callId, data).catch(() => undefined);
     };
 
-    const onEnded = ({ callId, reason }: { callId: string; reason: string }) => {
+    const onEnded = ({ callId, reason }: CallEndedEvent) => {
       if (stateRef.current.callId !== callId) return;
       cleanup();
       dispatch({ type: "ended", reason, callId });
@@ -264,16 +278,16 @@ export function CallProvider({ children }: { children: ReactNode }) {
       dispatch({ type: "ended", reason: "disconnected" });
     };
 
-    socket.on("call_incoming", onIncoming);
-    socket.on("call_accepted", onAccepted);
-    socket.on("call_signal", onSignal);
-    socket.on("call_ended", onEnded);
+    socket.on(CALL_EVENTS.incoming, onIncoming);
+    socket.on(CALL_EVENTS.accepted, onAccepted);
+    socket.on(CALL_EVENTS.signal, onSignal);
+    socket.on(CALL_EVENTS.ended, onEnded);
     socket.on("disconnect", onDisconnect);
     return () => {
-      socket.off("call_incoming", onIncoming);
-      socket.off("call_accepted", onAccepted);
-      socket.off("call_signal", onSignal);
-      socket.off("call_ended", onEnded);
+      socket.off(CALL_EVENTS.incoming, onIncoming);
+      socket.off(CALL_EVENTS.accepted, onAccepted);
+      socket.off(CALL_EVENTS.signal, onSignal);
+      socket.off(CALL_EVENTS.ended, onEnded);
       socket.off("disconnect", onDisconnect);
     };
   }, [socket, emit, cleanup, clearRingTimer, createPeer, handleSignal, hangUp, sendSignal]);
@@ -297,6 +311,23 @@ export function CallProvider({ children }: { children: ReactNode }) {
     dispatch({ type: "toggleCamera" });
   }, []);
 
+  const toggleSpeaker = useCallback(() => {
+    dispatch({ type: "toggleSpeaker" });
+  }, []);
+
+  // Route the other person's voice once media flows (WebRTC sets up the audio session first),
+  // and whenever the speaker button is pressed. Normal playback comes back after the call.
+  const routedRef = useRef(false);
+  useEffect(() => {
+    if (state.phase === "active") {
+      routedRef.current = true;
+      void setCallSpeaker(state.speakerOn);
+    } else if (state.phase === "idle" && routedRef.current) {
+      routedRef.current = false;
+      void resetCallAudio();
+    }
+  }, [state.phase, state.speakerOn]);
+
   const flipCamera = useCallback(() => {
     localRef.current?.getVideoTracks().forEach((track) => track._switchCamera());
   }, []);
@@ -319,6 +350,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
       hangUp,
       toggleMute,
       toggleCamera,
+      toggleSpeaker,
       flipCamera,
     }),
     [
@@ -331,6 +363,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
       hangUp,
       toggleMute,
       toggleCamera,
+      toggleSpeaker,
       flipCamera,
     ],
   );

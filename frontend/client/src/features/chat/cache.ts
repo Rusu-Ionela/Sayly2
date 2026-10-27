@@ -15,13 +15,13 @@ import type {
 export { isLocalMessageId } from "./model/clientMessageId";
 
 type MessagesCache = {
-  pages: Array<{
+  pages: {
     items: ChatMessage[];
     nextCursor?: string | null;
     hasMore?: boolean;
     limit?: number;
     page?: number;
-  }>;
+  }[];
   pageParams: unknown[];
 };
 

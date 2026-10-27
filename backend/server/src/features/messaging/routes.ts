@@ -19,6 +19,7 @@ conversationsRouter.post("/:id/messages", authenticate, messageSendLimiter, cont
 conversationsRouter.patch("/:id/read", authenticate, controller.markConversationRead);
 conversationsRouter.put("/:id/pin", authenticate, mutationLimiter, controller.setPinned(true));
 conversationsRouter.delete("/:id/pin", authenticate, mutationLimiter, controller.setPinned(false));
+conversationsRouter.put("/:id/auto-translate", authenticate, mutationLimiter, controller.setAutoTranslate);
 conversationsRouter.post(
   "/:id/messages/:messageId/translate",
   authenticate,

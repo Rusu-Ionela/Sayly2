@@ -7,6 +7,7 @@ import { AppError } from "../../shared/errors/AppError";
 
 vi.mock("../messaging/service", () => ({ assertCanAccessConversation: vi.fn() }));
 vi.mock("../messaging/presence", () => ({ isOnline: vi.fn() }));
+vi.mock("../partyRooms/repository", () => ({ isInPartyRoom: vi.fn().mockResolvedValue(false) }));
 
 import { isOnline } from "../messaging/presence";
 import { assertCanAccessConversation } from "../messaging/service";
@@ -14,6 +15,7 @@ import { callSignalSchema } from "./schema";
 import {
   acceptCall,
   currentCallId,
+  declineCall,
   endCall,
   iceServers,
   otherParty,
@@ -118,6 +120,26 @@ describe("acceptCall", () => {
   });
 });
 
+describe("declineCall", () => {
+  it("lets the callee reject a ringing call and frees both people", async () => {
+    const call = await invite("AUDIO");
+    await expect(declineCall(call.callId, callee)).resolves.toMatchObject({ callerId: caller });
+    expect(await currentCallId(caller)).toBeNull();
+    expect(await currentCallId(callee)).toBeNull();
+  });
+
+  it("does not let the caller decline their own call", async () => {
+    const call = await invite();
+    await expectCode(declineCall(call.callId, caller), "FORBIDDEN", 403);
+  });
+
+  it("cannot decline a call that was already answered", async () => {
+    const call = await invite();
+    await acceptCall(call.callId, callee);
+    await expectCode(declineCall(call.callId, callee), "CONFLICT", 409);
+  });
+});
+
 describe("endCall", () => {
   it("reports 'cancelled' when the caller hangs up while ringing", async () => {
     const call = await invite();
@@ -196,7 +218,15 @@ describe("callSignalSchema", () => {
   it("accepts a normal signal and rejects an oversized one", () => {
     expect(callSignalSchema.safeParse({ callId: "c1", data: { type: "offer", sdp: "v=0" } }).success).toBe(true);
     expect(
-      callSignalSchema.safeParse({ callId: "c1", data: { sdp: "x".repeat(25_000) } }).success,
+      callSignalSchema.safeParse({ callId: "c1", data: { type: "offer", sdp: "x".repeat(25_000) } })
+        .success,
     ).toBe(false);
+  });
+
+  it("accepts ICE candidates and rejects anything that is not offer/answer/candidate", () => {
+    const candidate = { candidate: "candidate:1 1 udp 2122260223 10.0.0.2 54321 typ host", sdpMid: "0", sdpMLineIndex: 0 };
+    expect(callSignalSchema.safeParse({ callId: "c1", data: { type: "candidate", candidate } }).success).toBe(true);
+    expect(callSignalSchema.safeParse({ callId: "c1", data: { type: "bye", note: "hi" } }).success).toBe(false);
+    expect(callSignalSchema.safeParse({ callId: "c1", data: { type: "answer" } }).success).toBe(false);
   });
 });

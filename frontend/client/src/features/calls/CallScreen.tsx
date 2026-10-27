@@ -44,15 +44,24 @@ function RoundButton({
       accessibilityRole="button"
       accessibilityLabel={label}
     >
-      <Ionicons name={icon} size={28} color={color} />
+      <Ionicons name={icon} size={26} color={color} />
     </Pressable>
   );
 }
 
 /** Full-screen call UI. Renders nothing while idle, except a brief "Call ended" style notice. */
 export function CallScreen() {
-  const { state, localStream, remoteStream, accept, hangUp, toggleMute, toggleCamera, flipCamera } =
-    useCall();
+  const {
+    state,
+    localStream,
+    remoteStream,
+    accept,
+    hangUp,
+    toggleMute,
+    toggleCamera,
+    toggleSpeaker,
+    flipCamera,
+  } = useCall();
   const insets = useSafeAreaInsets();
   const [now, setNow] = useState(() => Date.now());
 
@@ -139,6 +148,12 @@ export function CallScreen() {
                 active={state.muted}
                 onPress={toggleMute}
               />
+              <RoundButton
+                icon={state.speakerOn ? "volume-high" : "volume-low"}
+                label={state.speakerOn ? "Turn speaker off" : "Turn speaker on"}
+                active={state.speakerOn}
+                onPress={toggleSpeaker}
+              />
               {video ? (
                 <RoundButton
                   icon={state.cameraOff ? "videocam-off" : "videocam"}
@@ -181,13 +196,15 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     flexDirection: "row",
+    flexWrap: "wrap",
     justifyContent: "center",
-    gap: 22,
+    paddingHorizontal: 16,
+    gap: 14,
   },
   round: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 58,
+    height: 58,
+    borderRadius: 29,
     alignItems: "center",
     justifyContent: "center",
   },

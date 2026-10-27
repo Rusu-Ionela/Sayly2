@@ -12,6 +12,7 @@ vi.mock("./service", () => ({
   sendMessage: vi.fn(),
   markMessagesRead: vi.fn(),
   setConversationPinned: vi.fn(),
+  setConversationAutoTranslate: vi.fn(),
   assertCanAccessConversation: vi.fn(),
   getOrCreateDirectConversation: vi.fn(),
   markMessagesDelivered: vi.fn(),
@@ -127,6 +128,7 @@ describe("CHAT-001 / CHAT-002 messaging", () => {
             lastMessageAt: sampleMessage.createdAt,
             updatedAt: sampleMessage.createdAt,
             pinnedAt: null,
+            autoTranslate: false,
           },
         ],
         nextCursor: null,
@@ -165,6 +167,29 @@ describe("CHAT-001 / CHAT-002 messaging", () => {
       mockedPin.mockRejectedValue(new AppError("You can pin up to 3 chats", 409, "CONFLICT"));
       const res = await request(app).put("/conversations/conv-1/pin").set("Authorization", "Bearer test");
       expect(res.status).toBe(409);
+    });
+  });
+
+  describe("auto-translate", () => {
+    it("saves the choice for the signed-in member only", async () => {
+      vi.mocked(messagingService.setConversationAutoTranslate).mockResolvedValue({
+        conversationId: "conv-1",
+        autoTranslate: true,
+      });
+      const res = await request(app)
+        .put("/conversations/conv-1/auto-translate")
+        .set("Authorization", "Bearer t")
+        .send({ enabled: true });
+      expect(res.status).toBe(200);
+      expect(messagingService.setConversationAutoTranslate).toHaveBeenCalledWith("viewer-1", "conv-1", true);
+    });
+
+    it("requires a boolean", async () => {
+      const res = await request(app)
+        .put("/conversations/conv-1/auto-translate")
+        .set("Authorization", "Bearer t")
+        .send({ enabled: "yes" });
+      expect(res.status).toBe(400);
     });
   });
 

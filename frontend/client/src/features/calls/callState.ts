@@ -1,8 +1,9 @@
-export type CallKind = "AUDIO" | "VIDEO";
+import type { CallKind, CallPeerSummary } from "@sayly/shared";
 
-export type CallPeer = { id: string; displayName: string; avatarUrl: string | null };
+export type { CallKind };
+export type CallPeer = CallPeerSummary;
 
-export type CallPhase = "idle" | "outgoing" | "incoming" | "connecting" | "active";
+type CallPhase = "idle" | "outgoing" | "incoming" | "connecting" | "active";
 
 export type CallState = {
   phase: CallPhase;
@@ -12,6 +13,8 @@ export type CallState = {
   peer: CallPeer | null;
   muted: boolean;
   cameraOff: boolean;
+  /** Loudspeaker instead of the earpiece. Video calls start on the speaker, audio calls don't. */
+  speakerOn: boolean;
   /** Epoch ms when media first flowed; drives the on-screen timer. */
   connectedAt: number | null;
   /** One-line result of the last call ("Call declined"), shown briefly after it ends. */
@@ -26,6 +29,7 @@ export const idleCall: CallState = {
   peer: null,
   muted: false,
   cameraOff: false,
+  speakerOn: false,
   connectedAt: null,
   notice: null,
 };
@@ -41,6 +45,7 @@ export type CallAction =
   | { type: "ended"; reason: string; callId?: string }
   | { type: "toggleMute" }
   | { type: "toggleCamera" }
+  | { type: "toggleSpeaker" }
   | { type: "clearNotice" };
 
 function endNotice(reason: string, phase: CallPhase): string | null {
@@ -56,6 +61,8 @@ function endNotice(reason: string, phase: CallPhase): string | null {
       return "Couldn’t connect the call";
     case "ended":
       return "Call ended";
+    case "answered_elsewhere":
+      return "Answered on another device";
     default:
       return null;
   }
@@ -67,7 +74,7 @@ export function callReducer(state: CallState, action: CallAction): CallState {
     case "incoming": {
       if (state.phase !== "idle") return state;
       const { type, ...ring } = action;
-      return { ...idleCall, ...ring, phase: type };
+      return { ...idleCall, ...ring, phase: type, speakerOn: ring.kind === "VIDEO" };
     }
     case "connecting":
       return state.phase === "outgoing" || state.phase === "incoming"
@@ -88,6 +95,8 @@ export function callReducer(state: CallState, action: CallAction): CallState {
       return state.phase === "idle" || state.kind !== "VIDEO"
         ? state
         : { ...state, cameraOff: !state.cameraOff };
+    case "toggleSpeaker":
+      return state.phase === "idle" ? state : { ...state, speakerOn: !state.speakerOn };
     case "clearNotice":
       return state.notice ? { ...state, notice: null } : state;
   }

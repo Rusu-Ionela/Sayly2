@@ -98,4 +98,17 @@ describe("callReducer", () => {
     const ended = callReducer(outgoing(), { type: "ended", reason: "declined" });
     expect(callReducer(ended, { type: "clearNotice" }).notice).toBeNull();
   });
+  it("starts video calls on the speaker and audio calls on the earpiece", () => {
+    expect(outgoing().speakerOn).toBe(true);
+    const audio = callReducer(idleCall, { type: "incoming", ...ring, kind: "AUDIO" });
+    expect(audio.speakerOn).toBe(false);
+    expect(callReducer(audio, { type: "toggleSpeaker" }).speakerOn).toBe(true);
+    expect(callReducer(idleCall, { type: "toggleSpeaker" })).toBe(idleCall);
+  });
+
+  it("tells a second device the call was picked up elsewhere", () => {
+    expect(
+      callReducer(incoming(), { type: "ended", reason: "answered_elsewhere", callId: "c1" }).notice,
+    ).toBe("Answered on another device");
+  });
 });

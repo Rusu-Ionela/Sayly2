@@ -1,5 +1,5 @@
 /** Manual retries (when socket.io gives up by design) back off like its own: 1s → 30s. */
-export const RECONNECT_BASE_MS = 1_000;
+const RECONNECT_BASE_MS = 1_000;
 export const RECONNECT_MAX_MS = 30_000;
 /** After this many failed attempts in a row the UI says "unavailable", not "reconnecting". */
 export const QUIET_ATTEMPTS = 3;

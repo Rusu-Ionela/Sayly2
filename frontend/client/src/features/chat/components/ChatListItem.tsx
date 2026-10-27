@@ -51,7 +51,11 @@ function ChatListItemComponent({
       />
       <View style={styles.body}>
         <View style={styles.top}>
-          <Text style={[styles.name, { color: colors.text }]} numberOfLines={1}>
+          <Text
+            style={[styles.name, { color: colors.text }]}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
             {conversation.otherUser.displayName}
           </Text>
           <View style={styles.meta}>
@@ -63,8 +67,13 @@ function ChatListItemComponent({
         </View>
         <View style={styles.previewRow}>
           <Text
-            style={[styles.preview, { color: unread ? colors.text : colors.muted }]}
-            numberOfLines={2}
+            style={[
+              styles.preview,
+              unread && styles.previewUnread,
+              { color: unread ? colors.text : colors.muted },
+            ]}
+            numberOfLines={1}
+            ellipsizeMode="tail"
           >
             {mine ? "You: " : ""}
             {snippet}
@@ -99,7 +108,8 @@ const styles = StyleSheet.create({
   meta: { flexDirection: "row", alignItems: "center", gap: 4 },
   time: { fontSize: 13 },
   previewRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  preview: { flex: 1, fontSize: 15, lineHeight: 20 },
+  preview: { flex: 1, minWidth: 0, fontSize: 15, lineHeight: 20 },
+  previewUnread: { fontWeight: "600" },
   dot: {
     minWidth: 20,
     height: 20,

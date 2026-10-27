@@ -275,6 +275,7 @@ export async function listConversations(
         lastMessageAt: conversations.lastMessageAt,
         updatedAt: conversations.updatedAt,
         pinnedAt: me.pinnedAt,
+        autoTranslate: me.autoTranslate,
         sortAt: sortAtExpr,
         partnerUserId: partner.userId,
         partnerDisplayName: profiles.displayName,
@@ -375,6 +376,7 @@ export async function listConversations(
         : (lastMessage?.createdAt ?? null),
       updatedAt: (row.lastMessageAt ?? row.updatedAt).toISOString(),
       pinnedAt: row.pinnedAt?.toISOString() ?? null,
+      autoTranslate: row.autoTranslate,
     };
   });
 
@@ -388,6 +390,25 @@ export async function listConversations(
     hasMore,
     limit: query.limit,
   };
+}
+
+/** Turns automatic translation of incoming messages on or off, for this member only. */
+export async function setConversationAutoTranslate(
+  userId: string,
+  conversationId: string,
+  enabled: boolean,
+) {
+  await assertCanAccessConversation(conversationId, userId);
+  await db
+    .update(conversationParticipants)
+    .set({ autoTranslate: enabled })
+    .where(
+      and(
+        eq(conversationParticipants.conversationId, conversationId),
+        eq(conversationParticipants.userId, userId),
+      ),
+    );
+  return { conversationId, autoTranslate: enabled };
 }
 
 /** Pins or unpins the chat for this user only. Pinning past the limit is a 409. */

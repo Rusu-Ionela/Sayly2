@@ -19,16 +19,16 @@ export function useOpenChat() {
   const [busyUserId, setBusyUserId] = useState<string | null>(null);
 
   const openChat = useCallback(
-    async (userId: string, knownConversationId?: string | null) => {
+    async (userId: string, knownConversationId?: string | null, draft?: string) => {
       if (knownConversationId) {
-        navigation.navigate("Conversation", { conversationId: knownConversationId });
+        navigation.navigate("Conversation", { conversationId: knownConversationId, draft });
         return;
       }
       setBusyUserId(userId);
       try {
         const { conversationId } = await openDirectConversation(userId);
         void queryClient.invalidateQueries({ queryKey: queryKeys.chat.conversations });
-        navigation.navigate("Conversation", { conversationId });
+        navigation.navigate("Conversation", { conversationId, draft });
       } catch (error) {
         const message =
           isApiError(error) && error.code === "CONNECTION_REQUIRED"

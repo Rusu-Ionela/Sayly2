@@ -14,6 +14,8 @@ import { AppError } from "../../shared/errors/AppError";
 import { normalizeLanguageCode } from "../languages/catalog";
 import { getMyLanguages } from "../languages/service";
 import { UPLOADS_DIR } from "../media/storage";
+import { translateText, translationProvider } from "../translation/provider";
+import { resolveSourceLanguage } from "../translation/sourceLanguage";
 import { getTranslateToSetting } from "../users/settings";
 
 import { toCorrectionDto } from "./corrections";
@@ -21,20 +23,11 @@ import { EXPRESSION_LANGUAGES, findExpression, listExpressions } from "./express
 import * as messagingRepository from "./repository";
 import type { ChatMessage } from "./types";
 
-export const TRANSLATION_PROVIDER_VERSION = "mymemory:autodetect:1";
-const MY_MEMORY_MAX_CHARS = 500;
+/** Recorded with each cached translation (which provider produced it). */
+export const TRANSLATION_PROVIDER_VERSION = translationProvider.version;
 const TRANSLATION_LOCK_TTL_MS = 15_000;
 const TRANSLATION_WAIT_MS = 12_000;
 const AI_INFLIGHT_TTL_MS = 30_000;
-
-const myMemoryResponseSchema = z.object({
-  responseStatus: z.union([z.number(), z.string()]),
-  responseData: z
-    .object({
-      translatedText: z.string().min(1),
-    })
-    .optional(),
-});
 
 const transcriptionResponseSchema = z.object({
   text: z.string().min(1),
@@ -50,51 +43,10 @@ function sleep(ms: number) {
   });
 }
 
-async function translateWithMyMemory(sourceText: string, target: string) {
-  if (sourceText.length > MY_MEMORY_MAX_CHARS) {
-    throw new AppError(
-      `Message is too long to translate (max ${MY_MEMORY_MAX_CHARS} characters)`,
-      400,
-      "VALIDATION_ERROR",
-    );
-  }
-
-  const url = new URL("https://api.mymemory.translated.net/get");
-  url.searchParams.set("q", sourceText);
-  url.searchParams.set("langpair", `autodetect|${target}`);
-
-  let response: Response;
-  try {
-    response = await fetch(url, { signal: AbortSignal.timeout(8_000) });
-  } catch {
-    throw new AppError("Could not translate this message right now", 502, "INTERNAL_ERROR");
-  }
-
-  let payload: unknown;
-  try {
-    payload = await response.json();
-  } catch {
-    throw new AppError("Could not translate this message right now", 502, "INTERNAL_ERROR");
-  }
-
-  const parsed = myMemoryResponseSchema.safeParse(payload);
-  const translated = parsed.success ? parsed.data.responseData?.translatedText?.trim() : "";
-  const ok =
-    parsed.success &&
-    (parsed.data.responseStatus === 200 || parsed.data.responseStatus === "200") &&
-    Boolean(translated);
-
-  if (!ok || !translated) {
-    throw new AppError("Could not translate this message right now", 502, "INTERNAL_ERROR");
-  }
-
-  return translated;
-}
-
 export function textToTranslate(message: {
   type: string;
   content: string;
-  transcript: string | null;
+  transcript?: string | null;
   caption?: string | null;
 }) {
   if (message.type === "VOICE" || message.type === "VIDEO") {
@@ -141,12 +93,20 @@ export async function translateMessage(
   conversationId: string,
   messageId: string,
   targetLang?: string,
+  sourceLang?: string,
 ): Promise<ChatMessage> {
   const message = await messagingRepository.getAccessibleMessage(userId, conversationId, messageId);
   const requested = targetLang ?? (await translationTargetCode(userId));
   const target = normalizeLanguageCode(requested);
   if (!target) {
     throw new AppError("Unsupported target language", 400, "VALIDATION_ERROR");
+  }
+  const requestedSource = sourceLang === undefined ? undefined : normalizeLanguageCode(sourceLang);
+  if (requestedSource === null) {
+    throw new AppError("Unsupported source language", 400, "VALIDATION_ERROR");
+  }
+  if (requestedSource === target) {
+    throw new AppError("Source and target language are the same", 400, "VALIDATION_ERROR");
   }
 
   const sourceText = textToTranslate(message);
@@ -163,7 +123,14 @@ export async function translateMessage(
   }
 
   const sourceHash = sourceHashFor(sourceText);
-  const cacheKey = { messageId: message.id, targetLang: target, sourceHash };
+  // Only translations made by the current provider version count: earlier ones guessed the
+  // source language and could be wrong ("salut" → "health").
+  const cacheKey = {
+    messageId: message.id,
+    targetLang: target,
+    sourceHash,
+    providerVersion: TRANSLATION_PROVIDER_VERSION,
+  };
   const existing = await messagingRepository.findTranslation(cacheKey);
   if (existing) {
     return messagingRepository.toTranslatedMessageDto(message, { text: existing.text, lang: existing.targetLang });
@@ -186,6 +153,7 @@ export async function translateMessage(
       return messagingRepository.toTranslatedMessageDto(message, { text: winner.text, lang: winner.targetLang });
     }
 
+    const source = requestedSource ?? (await resolveSourceLanguage(sourceText, message.senderId, target));
     const translated = await withConcurrency(
       "ai_user",
       userId,
@@ -193,7 +161,7 @@ export async function translateMessage(
       AI_INFLIGHT_TTL_MS,
       () =>
         withConcurrency("ai_global", "all", env.aiGlobalConcurrency, AI_INFLIGHT_TTL_MS, () =>
-          translateWithMyMemory(sourceText, target),
+          translateText(sourceText, source, target),
         ),
     );
 
@@ -218,18 +186,52 @@ export async function translateMessage(
 }
 
 /**
- * Translates profile text (bio, topics) into the viewer's native language.
- * shortcut: not cached, so each tap calls MyMemory again; add a cache table if profile translation traffic grows.
+ * Adds translations already made (in the viewer's target language, for the message's current
+ * text) to a page of messages, so a chat reopened later still shows them. Read-only: never
+ * calls the provider.
  */
-export async function translateProfileText(userId: string, sourceText: string, targetLang?: string) {
+export async function withCachedTranslations(userId: string, items: ChatMessage[]): Promise<ChatMessage[]> {
+  const pending = items.filter((item) => !item.translatedContent && textToTranslate(item));
+  if (pending.length === 0) return items;
+
+  const target = normalizeLanguageCode(await translationTargetCode(userId));
+  if (!target) return items;
+
+  const rows = await messagingRepository.findTranslationsFor(
+    pending.map((item) => item.id),
+    target,
+    TRANSLATION_PROVIDER_VERSION,
+  );
+  if (rows.length === 0) return items;
+
+  const byKey = new Map(rows.map((row) => [`${row.messageId}:${row.sourceHash}`, row]));
+  return items.map((item) => {
+    if (item.translatedContent) return item;
+    const source = textToTranslate(item);
+    const hit = source ? byKey.get(`${item.id}:${sourceHashFor(source)}`) : undefined;
+    return hit ? { ...item, translatedContent: hit.text, translatedLang: hit.targetLang } : item;
+  });
+}
+
+/**
+ * Translates profile text (bio, topics) into the viewer's native language.
+ * Not cached, so each tap calls the provider again; add a cache table if profile translation traffic grows.
+ */
+export async function translateProfileText(
+  userId: string,
+  authorId: string,
+  sourceText: string,
+  targetLang?: string,
+) {
   const target = normalizeLanguageCode(targetLang ?? (await translationTargetCode(userId)));
   if (!target) {
     throw new AppError("Unsupported target language", 400, "VALIDATION_ERROR");
   }
+  const source = await resolveSourceLanguage(sourceText, authorId, target);
 
   const text = await withConcurrency("ai_user", userId, env.aiUserConcurrency, AI_INFLIGHT_TTL_MS, () =>
     withConcurrency("ai_global", "all", env.aiGlobalConcurrency, AI_INFLIGHT_TTL_MS, () =>
-      translateWithMyMemory(sourceText, target),
+      translateText(sourceText, source, target),
     ),
   );
   return { text, lang: target };

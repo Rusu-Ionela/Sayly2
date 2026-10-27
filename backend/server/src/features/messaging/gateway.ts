@@ -32,6 +32,13 @@ export function emitToUsers(userIds: string[], event: string, payload: unknown) 
   server.to([...new Set(userIds)].map(userRoom)).emit(event, payload);
 }
 
+/** Reaches a user's other devices, but not the socket that triggered the event. */
+export function emitToUserExceptSocket(userId: string, socketId: string, event: string, payload: unknown) {
+  const server = getMessagingIo();
+  if (!server) return;
+  server.to(userRoom(userId)).except(socketId).emit(event, payload);
+}
+
 export function emitNewMessage(message: ChatMessage, recipientId: string) {
   const server = getMessagingIo();
   if (!server) return;

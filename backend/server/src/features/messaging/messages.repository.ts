@@ -22,6 +22,7 @@ import type {
   SendMessageResult,
 } from "./types";
 import { requireRow } from "../../db/helpers";
+import { notBlockedBetween } from "../safety/blockFilter";
 
 import { toMessageDto } from "./messageDto";
 import {
@@ -287,6 +288,46 @@ export async function markMessagesDelivered(messageIds: string[]) {
   return rows.map(toMessageDto);
 }
 
+/** Most messages promoted per reconnect; older ones still turn READ when the chat is opened. */
+const PENDING_DELIVERY_LIMIT = 200;
+
+/**
+ * Called when a user comes online: direct messages sent to them while they were offline
+ * become DELIVERED. Blocked pairs are skipped so a receipt never reveals presence.
+ */
+export async function markPendingDelivered(recipientId: string): Promise<ChatMessage[]> {
+  const pending = await db
+    .select({ id: messages.id })
+    .from(messages)
+    .innerJoin(conversations, eq(conversations.id, messages.conversationId))
+    .innerJoin(
+      conversationParticipants,
+      and(
+        eq(conversationParticipants.conversationId, messages.conversationId),
+        eq(conversationParticipants.userId, recipientId),
+      ),
+    )
+    .where(
+      and(
+        eq(conversations.type, "DIRECT"),
+        eq(messages.status, "SENT"),
+        ne(messages.senderId, recipientId),
+        notBlockedBetween(messages.senderId, recipientId),
+      ),
+    )
+    .orderBy(desc(messages.createdAt))
+    .limit(PENDING_DELIVERY_LIMIT);
+
+  if (pending.length === 0) return [];
+
+  const rows = await db
+    .update(messages)
+    .set({ status: "DELIVERED" })
+    .where(and(inArray(messages.id, pending.map((row) => row.id)), eq(messages.status, "SENT")))
+    .returning();
+  return rows.map(toMessageDto);
+}
+
 export async function markMessagesRead(
   userId: string,
   conversationId: string,
@@ -362,6 +403,31 @@ export async function findTranslation(input: {
     .limit(1);
 
   return row ?? null;
+}
+
+/** Cached translations of many messages into one language by one provider version, newest first. */
+export async function findTranslationsFor(
+  messageIds: string[],
+  targetLang: string,
+  providerVersion: string,
+) {
+  if (messageIds.length === 0) return [];
+  return db
+    .select({
+      messageId: messageTranslations.messageId,
+      sourceHash: messageTranslations.sourceHash,
+      targetLang: messageTranslations.targetLang,
+      text: messageTranslations.text,
+    })
+    .from(messageTranslations)
+    .where(
+      and(
+        inArray(messageTranslations.messageId, messageIds),
+        eq(messageTranslations.targetLang, targetLang),
+        eq(messageTranslations.providerVersion, providerVersion),
+      ),
+    )
+    .orderBy(desc(messageTranslations.updatedAt));
 }
 
 export async function saveMessageTranslation(input: {

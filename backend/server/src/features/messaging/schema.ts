@@ -48,10 +48,6 @@ export const listConversationsQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(50).default(DEFAULT_CONVERSATION_LIMIT),
 });
 
-export const translateMessageSchema = z.object({
-  targetLang: z.string().trim().min(2).max(8).optional(),
-});
-
 export const listMessagesQuerySchema = z.object({
   before: boundedIdSchema.optional(),
   page: z.coerce.number().int().min(1).max(100).optional(),

@@ -113,6 +113,21 @@ export async function promoteDelivered(
   }
 }
 
+/** Turns messages that waited for this user into DELIVERED and tells each sender. */
+export async function deliverPendingMessages(recipientId: string) {
+  const delivered = await messagingService.markPendingDelivered(recipientId);
+  const byConversation = new Map<string, { senderIds: Set<string>; messages: typeof delivered }>();
+  for (const message of delivered) {
+    const group = byConversation.get(message.conversationId) ?? { senderIds: new Set(), messages: [] };
+    group.senderIds.add(message.senderId);
+    group.messages.push(message);
+    byConversation.set(message.conversationId, group);
+  }
+  for (const [conversationId, group] of byConversation) {
+    emitMessageStatus({ conversationId, messages: group.messages }, [...group.senderIds]);
+  }
+}
+
 export function registerMessagingSockets(_io: Server, socket: Socket) {
   const userId = socket.data.userId as string | undefined;
   if (!userId) {
@@ -124,6 +139,7 @@ export function registerMessagingSockets(_io: Server, socket: Socket) {
   const authed = socket as AuthedSocket;
   runBackground("presence lease failed", markOnline(userId, authed.id).then(() => broadcastPresence(userId)));
   void authed.join(userRoom(userId));
+  runBackground("pending delivery failed", deliverPendingMessages(userId));
 
   const heartbeat = setInterval(() => {
     runBackground("presence heartbeat failed", refreshOnline(userId, authed.id).then((ok) => {

@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
 import { useEffect, useState } from "react";
-import { Image, Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { KeyboardSafeView } from "@/shared/components/KeyboardSafeView";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -57,7 +58,7 @@ export function MediaPreviewModal({ draft, onClose, onSend }: MediaPreviewModalP
           {draft.type === "VIDEO" ? (
             <ChatVideo uri={draft.uri} fill />
           ) : (
-            <Image source={{ uri: draft.uri }} style={styles.media} resizeMode="contain" />
+            <Image source={{ uri: draft.uri }} style={styles.media} contentFit="contain" />
           )}
         </View>
 
